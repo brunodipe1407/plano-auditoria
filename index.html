@@ -227,9 +227,9 @@ function heatClass(v){
 
 /* ---------- Listas (aba Listas) ---------- */
 const UNIDADES = ["Agência Estadual de Regulação dos Serviços Públicos Delegados do RS - AGERGS","BADESUL Desenvolvimento S.A. - Agência de Fomento/RS","Banco do Estado do Rio Grande do Sul S.A. - BANRISUL","Brigada Militar","Banco Regional de Desenvolvimento do Extremo Sul - BRDE","Caixa de Administração da Dívida Pública Estadual S.A. - CADIP","Corpo de Bombeiros Militar RS","Centrais de Abastecimento do Rio Grande do Sul S.A. - CEASA","Companhia Riograndense de Mineração - CRM","Companhia Operadora de Mineração - COM","Departamento Autônomo de Estradas de Rodagem - DAER","Departamento Estadual de Trânsito do RS - DETRAN","Defensoria Pública do Estado - DPE","Escritório de Desenvolvimento de Projetos - EDP","Empresa Gaúcha de Rodovias S/A - EGR","Fundação de Articulação e Desenvolvimento de Políticas Públicas P/Pessoas Portadoras de Deficiência e de Altas Habilidades no RS - FADERS","Fundação de Amparo à Pesquisa do Estado do Rio Grande do Sul - FAPERGS","Fundação de Atendimento Sócio-Educativo - FASE","Fundação Estadual de Proteção Ambiental Henrique Luís Roessler - FEPAM","Fundação Escola Técnica Liberato Salzano Vieira da Cunha - FETLSVC","Fundação Gaúcha do Trabalho e Ação Social - FGTAS","Fundação Orquestra Sinfônica de Porto Alegre - FOSPA","Fundação de Proteção Especial do Rio Grande do Sul - FPERGS","Fundação Theatro São Pedro - FTSP","Instituto de Previdência do Estado do Rio Grande do Sul - IPE Prev","Instituto de Assistência à Saúde dos Servidores Públicos do RS - IPE Saúde","Instituto Riograndense do Arroz - IRGA","Junta Comercial, Industrial e Serviços do Rio Grande do Sul - JUCIS","Fundação Estadual de Planejamento Metropolitano e Regional - METROPLAN","Ministério Público do Estado - MPRS","Autoridade Portuária dos Portos do RS - PORTOS RS","Centro de Tecnologia da Informação e Comunicação do Estado do Rio Grande do Sul - PROCERGS","Fundação de Previdência Complementar do Servidor Público do Estado do Rio Grande do Sul - RS-PREV","Superintendência dos Serviços Penitenciários - SSP","Universidade Estadual do RS - UERGS","Governador do Estado RS","Secretário-Chefe da Casa Civil","Casa Militar","Procuradoria Geral do Estado - PGE/RS","Assembleia Legislativa do Estado do RS - ALRS","Tribunal de Contas do Estado do RS - TCE/RS","Secretaria do Meio Ambiente e Infraestrutura - SEMA","Secretaria da Agricultura, Pecuária, Produção Sustentável e Irrigação - SEAPI","Secretaria da Educação - SEDUC","Secretaria da Fazenda - SEFAZ","Secretaria de Trabalho e Desenvolvimento Profissional - STDP","Secretaria de Obras Públicas - SOP","Secretaria de Desenvolvimento Rural - SDR","Secretaria da Saúde - SES","Secretaria da Segurança Pública - SSP","Secretaria de Logística e Transportes - SELT","Secretaria de Desenvolvimento Econômico - SEDEC","Secretaria de Comunicação - SECOM","Secretaria de Planejamento, Governança e Gestão - SPGG","Subsecretaria de Patrimônio do Estado - SPE","Secretaria da Cultura - SEDAC","Secretaria de Desenvolvimento Urbano e Metropolitano - SEDUR","Secretaria de Sistemas Penal Socioeducativo - SSPS","Secretaria do Esporte e Lazer - SEL","Secretaria de Desenvolvimento Social - SEDES","Secretaria de Justiça, Cidadania e Direitos Humanos - SJCDH","Secretaria de Inclusão Digital e Apoio às Políticas de Equidade - SEIDAPE","Secretaria da Reconstrução Gaúcha - SERG","Secretaria de Inovação, Ciência e Tecnologia - SICT","Secretaria de Habitação e Regularização Fundiária - SEHAB","Secretaria de Estado da Mulher - SEM","Secretaria de Turismo - SETUR"];
-const SUPERVISORES = ["Guilherme Pinto de Lima","Luis Felipe Pacheco","Thomaz Menna Barreto Moojen"];
-const COORDENADORES = ["Alexandre Silva de Castro","Catherine Kaori Makiyama","Fernanda Mallmann","Gabriela Marin Konzen Balbinot","Rodrigo Moreira Machado","Luis André Cabral de Carvalho","Paulo Roberto Nunes Ferreira","Rafael Rosenfeld","Renata Bartzen Pereira"];
-const AUDITORES = ["Alécio José Vargas","Alexandre Silva de Castro","Bruno Dias Pereira","Carlos Yuji Nagayama","Catherine Kaori Makiyama","Cleber Ferreira de Lima","Diego de Souza Mendonça","Dione Silva Santos","Fernanda Mallmann","Francisco Estevanes Peres","Francisco Gomes","Gabriela Marin Konzen Balbinot","Guilherme Pinto de Lima","Jairo Berleza Guerra","Jefferson Douglas dos Santos Passos","Jorge Luis Letner dos Santos","Juan Marcelo Schenkel Rivera","Lorenzo Giacomo Venzon","Luis André Cabral de Carvalho","Luis Felipe Pacheco","Marcos de Oliveira Ramos","Mariana de Oliveira Cavalheiro","Maurício Ramos Araújo Martins","Patrícia Teixeira Ferrer","Paulo Roberto Nunes Ferreira","Pedro Henrique Santese Silva","Rafael Rosenfeld","Renata Bartzen Pereira","Roberto Rheinheimer Walter","Rodrigo Moreira Machado","Tassia Akemi de Farias Araki","Tayguara Marques Moreira","Thomaz Menna Barreto Moojen"];
+const SUPERVISORES = [];
+const COORDENADORES = [];
+const AUDITORES = [];
 
 /* ---------- Catálogo de Vulnerabilidades (§13) ---------- */
 const CATALOGO = {
@@ -443,6 +443,11 @@ function slug(s){ return (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]
    ============================================================ */
 function esc(s){ return (s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function optionList(arr,sel){ return ['<option value=""></option>'].concat(arr.map(v=>`<option value="${esc(v)}"${v===sel?" selected":""}>${esc(v)}</option>`)).join(""); }
+/* Responsáveis: dropdown travado quando há lista; campo de texto editável quando a lista está vazia (versão pública sem nomes). */
+function pessoaField(arr,path,val){
+  if(arr&&arr.length) return `<select onchange="setPath('${path}',this.value);render()">${optionList(arr,val)}</select>`;
+  return `<input type="text" value="${esc(val||'')}" placeholder="Informe o nome" oninput="setPath('${path}',this.value)">`;
+}
 function infoIcon(key){ return `<i class="info" title="Clique para ver a orientação" onclick="toggleHint(this)">i</i><div class="hint">${esc(ORIENT[key]||"")}</div>`; }
 function toggleHint(el){ const h=el.parentElement.querySelector(".hint"); if(h) h.classList.toggle("show"); }
 
@@ -558,7 +563,7 @@ function autoHeader(){
    ============================================================ */
 function viewEntendimento(){
   const e=state.entendimento;
-  const dd=(arr,path)=>`<select onchange="setPath('${path}',this.value);render()">${optionList(arr,e[path.split('.').pop()])}</select>`;
+  const dd=(arr,path)=>pessoaField(arr,path,e[path.split('.').pop()]);
   let objetivos = e.objetivos.map((o,i)=>`
     <div class="subline">
       <span class="reftag">Objetivo ${i+1}</span>
@@ -686,7 +691,7 @@ function viewIdentificacao(){
       <div class="sub">Cabeçalho automático do Entendimento. Lista de riscos dinâmica (inicia com 3).</div>
       ${autoHeader()}
       <div class="field"><label>Elaborado por</label>
-        <select onchange="setPath('entendimento.elaboradoPor',this.value)">${optionList(AUDITORES,state.entendimento.elaboradoPor)}</select></div>
+        ${pessoaField(AUDITORES,'entendimento.elaboradoPor',state.entendimento.elaboradoPor)}</div>
     </div>
     ${cards}
     <button class="primary" onclick="addRisco()">+ adicionar risco</button>`;
