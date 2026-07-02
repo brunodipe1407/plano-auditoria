@@ -667,7 +667,6 @@ function viewIdentificacao(){
             <option value="">Categoria…</option>
             ${cats.map(c=>`<option value="${esc(c)}"${f.categoria===c?' selected':''}>${esc(c)}</option>`).join("")}
           </select>
-          ${f.categoria&&itens.length?`<button class="sm" onclick="sugerirCausa(${ri},${fi})" title="Sugerir vulnerabilidade do catálogo como causa">↳ sugerir causa</button>`:""}
           <span class="sep"></span>
           <button class="danger sm" onclick="removeFonte('${r.id}','${f.id}')" title="Remover esta fonte com sua causa e consequência">×</button>
         </div>
@@ -714,18 +713,7 @@ function setFonteTipo(ri,fi,v){
 }
 function setFonteCategoria(ri,fi,v){
   const f=state.riscos[ri].fontes[fi];
-  f.categoria=v; touch();
-  // auto-sugere vulnerabilidade do catálogo se a causa estiver vazia
-  if(v && !f.causa.trim()){ sugerirCausa(ri,fi); } else { render(); }
-}
-function sugerirCausa(ri,fi){
-  const r=state.riscos[ri], f=r.fontes[fi];
-  const itens=(CATALOGO[f.tipo]||{})[f.categoria]||[];
-  if(!itens.length){ render(); return; }
-  // usa a primeira vulnerabilidade da categoria ainda não utilizada neste risco
-  const usados = r.fontes.map(x=>x.causa.trim());
-  f.causa = itens.find(t=>!usados.includes(t)) || itens[0];
-  touch(); render();
+  f.categoria=v; touch(); render();
 }
 function addRisco(){ state.riscos.push(novoRisco()); touch(); render(); }
 function removeRisco(id){
