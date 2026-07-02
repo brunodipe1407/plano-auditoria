@@ -85,7 +85,6 @@
   table.grid th,table.grid td{border:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left}
   table.grid th{background:var(--cage-navy);color:#fff;font-weight:600;position:sticky;top:0}
   .calc{background:#f4f8ff}
-  .calc.overridden{background:#fffbe0;outline:1px dashed #c9a400}
   .calc .sugg{display:block;font-size:11px;color:var(--muted);margin-top:2px}
   .clz{padding:2px 6px;border-radius:4px;font-weight:600;display:inline-block}
   .clz-Crítico,.clz-Extremo{background:var(--crit-bg);color:var(--crit-tx)}
@@ -104,9 +103,6 @@
   .legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:12px}
   .legend span{display:inline-flex;align-items:center;gap:5px}
   .legend i{width:14px;height:14px;border-radius:3px;display:inline-block}
-  .toggle{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#2a3550;cursor:pointer}
-  .ovr-wrap{margin-top:4px}
-  .ovr-just{margin-top:4px}
   details.cat>summary{cursor:pointer;font-weight:600;color:var(--cage-navy);padding:6px 0}
   details.cat ul{margin:4px 0 10px;padding-left:18px}
   details.cat li{margin:2px 0;display:flex;gap:8px;align-items:center}
@@ -320,11 +316,7 @@ function novoRisco(){
     fontes:[novaFonte(),novaFonte()],
     probabilidade:"", impacto:"", controlesChave:"", avaliacaoControle:"",
     comentariosPreliminar:"", conclusaoCoordenador:"", justificativaEscopo:"",
-    matrizControles:{principal:"", aux1:"", aux2:"", aux3:""},
-    override:{ classificacaoInerente:null, justificativaClassInerente:"",
-               classificacaoResidual:null, justificativaClassResidual:"",
-               testeRecomendado:null, justificativaTeste:"",
-               prioridade:null, justificativaPrioridade:"" }
+    matrizControles:{principal:"", aux1:"", aux2:"", aux3:""}
   };
 }
 function estadoInicial(){
@@ -351,27 +343,23 @@ let activeTab = "entendimento";
    CÁLCULOS DERIVADOS
    ============================================================ */
 function calcRisco(r){
+  // cálculo puro — reproduz as fórmulas do Excel, sem ajuste manual
   const ps = PROB_SCORE[r.probabilidade]||null;
   const is = IMP_SCORE[r.impacto]||null;
   const pxi = (ps&&is)? ps*is : null;
-  const inerCalc = classInerente(pxi);
-  const iner = (r.override.classificacaoInerente)||inerCalc;
+  const iner = classInerente(pxi);
   const ctrlDesc = r.avaliacaoControle? CTRL_DESC[r.avaliacaoControle] : "";
-  let comb = (iner&&r.avaliacaoControle)? TAB[iner+"|"+r.avaliacaoControle] : null;
-  const residualCalc = comb? comb.residual : "";
-  const sinteseCalc = comb? comb.sintese : "";
-  const testeCalc = comb? comb.teste : "";
-  const prioCalc = comb? comb.prioridade : "";
+  const comb = (iner&&r.avaliacaoControle)? TAB[iner+"|"+r.avaliacaoControle] : null;
   return {
     ps,is,pxi,
-    inerCalc, iner,
+    iner,
     ctrlScore: r.avaliacaoControle? CTRL_SCORE[r.avaliacaoControle]:null,
     ctrlFunc: r.avaliacaoControle? CTRL_FUNC[r.avaliacaoControle]:"",
     ctrlDesc,
-    residualCalc, residual:(r.override.classificacaoResidual)||residualCalc,
-    sintese:sinteseCalc,
-    testeCalc, teste:(r.override.testeRecomendado)||testeCalc,
-    prioCalc, prioridade:(r.override.prioridade)||prioCalc
+    residual: comb? comb.residual : "",
+    sintese: comb? comb.sintese : "",
+    teste: comb? comb.teste : "",
+    prioridade: comb? comb.prioridade : ""
   };
 }
 function riscosEmEscopo(){ return state.riscos.filter(r=>r.conclusaoCoordenador==="Escopo"); }
@@ -423,7 +411,7 @@ function migrate(obj){
   obj.achados = obj.achados||{byKey:{}};
   obj.achados.byKey = obj.achados.byKey||{};
   (obj.riscos||[]).forEach(r=>{
-    r.override = r.override||{classificacaoInerente:null,justificativaClassInerente:"",classificacaoResidual:null,justificativaClassResidual:"",testeRecomendado:null,justificativaTeste:"",prioridade:null,justificativaPrioridade:""};
+    delete r.override; // colunas calculadas travadas em cálculo puro (fórmulas do Excel)
     if(!Array.isArray(r.fontes)){
       // migra formatos antigos: fonteRisco por risco e listas separadas de causas/consequências
       const causas=r.causas||[], cons=r.consequencias||[];
@@ -814,37 +802,6 @@ function removeFonte(rid,fid){ const r=state.riscos.find(x=>x.id===rid);
    3. MATRIZ DE RISCOS E CONTROLES
    ============================================================ */
 function clzSpan(v){ return v? `<span class="clz clz-${esc(v)}">${esc(v)}</span>`:""; }
-function overrideCell(ri,campo,calcVal,opcoes){
-  const r=state.riscos[ri];
-  const ov=r.override[campo];
-  const just = r.override["justificativa"+campo.charAt(0).toUpperCase()+campo.slice(1).replace("classificacao","Class")] ;
-  // mapeia nome da justificativa
-  const justKey = {classificacaoInerente:"justificativaClassInerente",classificacaoResidual:"justificativaClassResidual",testeRecomendado:"justificativaTeste",prioridade:"justificativaPrioridade"}[campo];
-  const justVal = r.override[justKey];
-  const overridden = ov!=null && ov!=="";
-  let selOrInput;
-  if(opcoes){
-    selOrInput = `<select class="sm" onchange="setOverride(${ri},'${campo}','${justKey}',this.value)">${optionList(opcoes,ov||"")}</select>`;
-  } else {
-    selOrInput = `<input class="sm" type="text" value="${esc(ov||"")}" onchange="setOverride(${ri},'${campo}','${justKey}',this.value)" placeholder="valor manual">`;
-  }
-  return `<div class="calc${overridden?' overridden':''}">
-    ${overridden? `<b>${campo==='classificacaoInerente'||campo==='classificacaoResidual'?clzSpan(ov):esc(ov)}</b> 🖊` : (campo==='classificacaoInerente'||campo==='classificacaoResidual'?clzSpan(calcVal):esc(calcVal)||"—")}
-    <span class="sugg">sugerido: ${campo==='classificacaoInerente'||campo==='classificacaoResidual'?(calcVal||"—"):esc(calcVal)||"—"}</span>
-    <label class="toggle" style="margin-top:4px"><input type="checkbox" ${overridden?'checked':''} onchange="toggleOverride(${ri},'${campo}','${justKey}',this.checked)"> ajustar manualmente</label>
-    <div class="ovr-wrap" style="${overridden?'':'display:none'}">
-      ${selOrInput}
-      <textarea class="ovr-just ${overridden&&!(justVal||'').trim()?'req-empty':''}" placeholder="Justificativa (obrigatória)" oninput="r_setJust(${ri},'${justKey}',this.value)" style="min-height:42px;margin-top:4px">${esc(justVal||"")}</textarea>
-    </div>
-  </div>`;
-}
-function setOverride(ri,campo,justKey,val){ state.riscos[ri].override[campo]= val||null; touch(); render(); }
-function toggleOverride(ri,campo,justKey,on){
-  if(on){ const cr=calcRisco(state.riscos[ri]); const calc={classificacaoInerente:cr.inerCalc,classificacaoResidual:cr.residualCalc,testeRecomendado:cr.testeCalc,prioridade:cr.prioCalc}[campo]; state.riscos[ri].override[campo]=calc||" "; }
-  else { state.riscos[ri].override[campo]=null; state.riscos[ri].override[justKey]=""; }
-  touch(); render();
-}
-function r_setJust(ri,justKey,val){ state.riscos[ri].override[justKey]=val; touch(); }
 
 function viewMatriz(){
   if(!state.riscos.length) return `<div class="card"><h2>Matriz de Riscos e Controles</h2><div class="empty">Nenhum risco. Volte à Identificação.</div></div>`;
@@ -860,15 +817,15 @@ function viewMatriz(){
       <td><select class="sm" onchange="state.riscos[${ri}].impacto=this.value;touch();render()">${optionList(IMP,r.impacto)}</select></td>
       <td class="calc" style="text-align:center">${c.is||"—"}</td>
       <td class="calc" style="text-align:center"><b>${c.pxi||"—"}</b></td>
-      <td>${overrideCell(ri,'classificacaoInerente',c.inerCalc,CLASSES_ORDER)}</td>
+      <td class="calc" style="text-align:center">${clzSpan(c.iner)||"—"}</td>
       <td><textarea class="sm" style="min-width:130px;min-height:40px" oninput="state.riscos[${ri}].controlesChave=this.value;touch()">${esc(r.controlesChave)}</textarea></td>
       <td><select class="sm" onchange="state.riscos[${ri}].avaliacaoControle=this.value;touch();render()">${optionList(CTRL,r.avaliacaoControle)}</select></td>
       <td class="calc" style="min-width:160px">${c.avaliacaoControle!==""&&c.ctrlDesc? `<b>${esc(r.avaliacaoControle)}</b> (${c.ctrlScore})<br><span class="sugg">${esc(c.ctrlDesc)}</span>`:"—"}</td>
-      <td>${overrideCell(ri,'classificacaoResidual',c.residualCalc,["Insignificante","Baixo","Baixo/Médio","Médio","Médio/Alto","Alto","Alto/Extremo","Extremo"])}</td>
+      <td class="calc" style="text-align:center">${clzSpan(c.residual)||"—"}</td>
       <td class="calc" style="min-width:150px">${esc(c.sintese)||"—"}</td>
       <td><textarea class="sm" style="min-width:130px;min-height:40px" oninput="state.riscos[${ri}].comentariosPreliminar=this.value;touch()">${esc(r.comentariosPreliminar)}</textarea></td>
-      <td>${overrideCell(ri,'testeRecomendado',c.testeCalc,[T_OPC,T_SUB,T_SUBP,T_SUBC])}</td>
-      <td>${overrideCell(ri,'prioridade',c.prioCalc,["Mínima","Muito baixa","Baixa","Alta","Muito alta","Alta, dependerá do nível dos riscos que o controle pretende mitigar"])}</td>
+      <td class="calc" style="min-width:140px">${esc(c.teste)||"—"}</td>
+      <td class="calc" style="min-width:110px">${esc(c.prioridade)||"—"}</td>
       <td><select class="sm" onchange="state.riscos[${ri}].conclusaoCoordenador=this.value;touch();render()">${optionList(CONCLUSAO_ESCOPO,r.conclusaoCoordenador)}</select>
         ${r.conclusaoCoordenador==="Escopo"?'<span class="badge escopo-yes">em escopo</span>':r.conclusaoCoordenador?'<span class="badge escopo-no">fora</span>':''}</td>
       <td><textarea class="sm ${r.conclusaoCoordenador==='Não será avaliado.'&&!r.justificativaEscopo.trim()?'req-empty':''}" style="min-width:130px;min-height:40px" oninput="state.riscos[${ri}].justificativaEscopo=this.value;touch()" placeholder="${r.conclusaoCoordenador==='Não será avaliado.'?'Justificativa obrigatória':''}">${esc(r.justificativaEscopo)}</textarea></td>
@@ -882,7 +839,7 @@ function viewMatriz(){
       <td><textarea class="sm" style="min-width:150px;min-height:40px" oninput="state.riscos[${ri}].matrizControles.aux3=this.value;touch()">${esc(r.matrizControles.aux3)}</textarea></td>
     </tr>`).join("");
   return `<div class="card"><h2>Matriz de Riscos e Controles</h2>
-    <div class="sub">Cabeçalho e Questão Geral replicados do Entendimento Preliminar — campos travados. Riscos replicados da Identificação; colunas de cálculo automático (fórmulas do Excel); permitido ajuste manual com justificativa.</div>
+    <div class="sub">Cabeçalho e Questão Geral replicados do Entendimento Preliminar — campos travados. Riscos replicados da Identificação; colunas calculadas automaticamente pelas fórmulas do Excel (travadas).</div>
     ${cabecalhoReplicado('Unidade Auditada')}
     <div class="scroll-x"><table class="grid"><thead>
     <tr>
@@ -925,10 +882,11 @@ function viewCalor(){
     }).join("");
     return `<tr><th>${imp} (${HEAT_IMP[imp]})</th>${tds}</tr>`;
   }).join("");
-  const header = `<tr><th>Impacto ↓ / Prob →</th>${probCols.map(p=>`<th>${p} (${HEAT_PROB[p]})</th>`).join("")}</tr>`;
+  const header = `<tr><th>IMPACTO ↓ / PROBABILIDADE →</th>${probCols.map(p=>`<th>${p} (${HEAT_PROB[p]})</th>`).join("")}</tr>`;
   return `<div class="card"><h2>Mapa de Calor</h2>
-    <div class="sub">Grade 5×5 (Impacto × Probabilidade), pesos corrigidos. Cada risco é plotado pela combinação escolhida na Matriz.</div>
+    <div class="sub">Grade 5×5 (IMPACTO × PROBABILIDADE) da aba oculta “Mapa de Calor” do Excel, com os pesos 1/3/5/8/10. Cada risco é plotado pela combinação escolhida na Matriz de Riscos e Controles.</div>
     ${autoHeader()}
+    <div class="sectionbar" style="margin:0 0 10px;border-radius:8px">Dispersão de Riscos Inerentes</div>
     <div class="scroll-x"><table class="heat">${header}${rows}</table></div>
     <div class="legend">
       <span><i style="background:var(--crit-bg)"></i>Crítico</span>
@@ -955,9 +913,9 @@ function viewPlanejamento(){
       const subs = subsDoRisco(r.id);
       const linhas = subs.map((s,si)=>`
         <div class="dyn">
-          <div class="dhead"><span class="ref">Subquestão ${ri+1}.${si+1}</span><span class="pill">PT${ri+1}.${si+1}</span><span class="sep"></span>
+          <div class="dhead"><span class="ref">Referência da Subquestão ${ri+1}.${si+1}</span><span class="pill" title="Programa de Trabalho">Programa de Trabalho: PT${ri+1}.${si+1}</span><span class="sep"></span>
             <button class="danger sm" onclick="removeSub('${r.id}','${s.id}')">× remover</button></div>
-          <div class="field"><label>Subquestão ${infoIcon('subquestao')}</label>
+          <div class="field"><label>Subquestão de Auditoria ${infoIcon('subquestao')}</label>
             <textarea oninput="subSet('${r.id}','${s.id}','texto',this.value)">${esc(s.texto)}</textarea></div>
           <div class="grid2">
             <div class="field"><label>Critério ${infoIcon('criterio')}</label>
@@ -974,10 +932,8 @@ function viewPlanejamento(){
     }).join("");
   }
   return `<div class="card"><h2>Matriz de Planejamento</h2>
-      <div class="sub">Recebe apenas os riscos em escopo. Subquestões dinâmicas com Critério, Procedimentos e Programa de Trabalho (PT).</div>
-      ${autoHeader()}
-      <div class="field"><label>Questão Geral de Auditoria ${infoIcon('questaoGeral')}</label>
-        <textarea oninput="setPath('planejamento.questaoGeral',this.value)">${esc(state.planejamento.questaoGeral)}</textarea></div>
+      <div class="sub">Cabeçalho e Questão Geral replicados do Entendimento Preliminar — campos travados; edite na aba 1. Recebe apenas os riscos com Conclusão do Coordenador “Escopo”.</div>
+      ${cabecalhoReplicado('Unidade Auditada')}
     </div>
     ${blocos}
     <div class="card"><div class="field"><label>Resposta à Questão Geral de Auditoria ${infoIcon('respostaGeral')}</label>
