@@ -73,7 +73,7 @@
   .fonte-block{border:1px solid var(--line);border-left:3px solid var(--cage-teal);border-radius:8px;padding:10px 12px 2px;margin-bottom:10px;background:#fbfcfe}
   .fonte-block .fhead{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
   .fonte-block .fhead .ref{font-weight:700;color:var(--cage-navy);font-size:13px;white-space:nowrap}
-  .fonte-block .fhead select{flex:1;min-width:140px;max-width:240px;font-size:12.5px;padding:5px 7px;color:#3a4a78}
+  .fonte-block .fhead select{flex:1;min-width:160px;max-width:340px;font-size:12.5px;padding:5px 7px;color:#3a4a78}
   .fonte-block .fhead .sep{flex:1}
   .addbtn{background:#e3f8f5;color:#00665c;border:1px dashed var(--cage-teal)}
   .risk-card{border-left:4px solid var(--cage-navy)}
@@ -272,6 +272,10 @@ const CATALOGO = {
   }
 };
 
+/* categoria -> tipo (Fontes Internas/Externas), derivado do catálogo */
+const CAT2TIPO = {};
+Object.keys(CATALOGO).forEach(t=>Object.keys(CATALOGO[t]).forEach(c=>{ CAT2TIPO[c]=t; }));
+
 /* ---------- Orientações (aba Orientações) ---------- */
 const ORIENT = {
   objeto:"É a informação, condição ou atividade que é mensurada ou avaliada de acordo com critérios definidos. Entende-se que o Objeto de Auditoria é apropriado quando é identificável, passível de avaliação ou mensuração consistente, apto a produzir evidência suficiente e adequada para fundamentar a opinião ou conclusão de auditoria.",
@@ -426,7 +430,7 @@ function migrate(obj){
         r.fontes.push({id:uid(),tipo:fc.tipo||"",categoria:fc.categoria||"",causa:(c&&c.texto)||"",consequencia:(q&&q.texto)||""});
       }
     }
-    r.fontes.forEach(f=>{ f.id=f.id||uid(); f.tipo=f.tipo||""; f.categoria=f.categoria||""; f.causa=f.causa||""; f.consequencia=f.consequencia||""; });
+    r.fontes.forEach(f=>{ f.id=f.id||uid(); f.categoria=f.categoria||""; f.tipo=f.tipo||CAT2TIPO[f.categoria]||""; f.causa=f.causa||""; f.consequencia=f.consequencia||""; });
     delete r.fonteRisco; delete r.causas; delete r.consequencias;
     r.matrizControles = r.matrizControles||{principal:"",aux1:"",aux2:"",aux3:""};
     if(r.conclusaoCoordenador==="Não será avaliado") r.conclusaoCoordenador="Não será avaliado.";
@@ -593,30 +597,30 @@ function cabecalhoReplicado(labelUnidade,labelBase,labelQuestao){
   const e=state.entendimento;
   return `
       <div class="grid2">
-        <div class="field"><label>${labelUnidade} <span class="pill">replicado</span></label>
+        <div class="field"><label>${labelUnidade}</label>
           <input type="text" readonly value="${esc(e.unidadeAuditada)}"></div>
-        <div class="field"><label>${labelBase} <span class="pill">replicado</span></label>
+        <div class="field"><label>${labelBase}</label>
           <input type="text" readonly value="${esc(e.numBaseAuditoria)}"></div>
       </div>
       <div class="grid3">
-        <div class="field"><label>Elaborado por <span class="pill">replicado</span></label>
+        <div class="field"><label>Elaborado por</label>
           <input type="text" readonly value="${esc(e.elaboradoPor)}">
           <input type="date" readonly style="margin-top:6px" value="${esc(e.elaboradoData)}"></div>
-        <div class="field"><label>Revisado por <span class="pill">replicado</span></label>
+        <div class="field"><label>Revisado por</label>
           <input type="text" readonly value="${esc(e.revisadoPor)}">
           <input type="date" readonly style="margin-top:6px" value="${esc(e.revisadoData)}"></div>
-        <div class="field"><label>Supervisionado por <span class="pill">replicado</span></label>
+        <div class="field"><label>Supervisionado por</label>
           <input type="text" readonly value="${esc(e.supervisionadoPor)}">
           <input type="date" readonly style="margin-top:6px" value="${esc(e.supervisionadoData)}"></div>
       </div>
-      <div class="field"><label>${labelQuestao} ${infoIcon('questaoGeral')} <span class="pill">replicado</span></label>
+      <div class="field"><label>${labelQuestao} ${infoIcon('questaoGeral')}</label>
         <textarea readonly>${esc(state.planejamento.questaoGeral)}</textarea></div>`;
 }
 
 /* cabeçalho auto (Unidade/Base) reutilizado */
 function autoHeader(){
   const e=state.entendimento;
-  return `<div class="notice">Unidade Auditada: <b>${esc(e.unidadeAuditada||"—")}</b> &nbsp;|&nbsp; Base de Auditoria: <b>${esc(e.numBaseAuditoria||"—")}</b> <span class="pill">propagado do Entendimento Preliminar</span></div>`;
+  return `<div class="notice">Unidade Auditada: <b>${esc(e.unidadeAuditada||"—")}</b> &nbsp;|&nbsp; Base de Auditoria: <b>${esc(e.numBaseAuditoria||"—")}</b></div>`;
 }
 
 /* ============================================================
@@ -719,21 +723,14 @@ function objetivoOptions(sel){
 function viewIdentificacao(){
   let cards = state.riscos.map((r,ri)=>{
     const fontes = r.fontes.map((f,fi)=>{
-      const cats = Object.keys(CATALOGO[f.tipo]||{});
       const itens = (CATALOGO[f.tipo]||{})[f.categoria]||[];
       const dlid = `dl_${r.id}_f_${fi}`;
       return `
       <div class="fonte-block">
         <div class="fhead">
-          <span class="ref">Fonte do Risco ${ri+1}.${fi+1}</span> ${infoIcon('fonte')}
-          <select onchange="setFonteTipo(${ri},${fi},this.value)" title="Tipo da fonte">
-            <option value="">Fonte…</option>
-            <option value="Fontes Internas"${f.tipo==='Fontes Internas'?' selected':''}>Fonte Interna</option>
-            <option value="Fontes Externas"${f.tipo==='Fontes Externas'?' selected':''}>Fonte Externa</option>
-          </select>
-          <select onchange="setFonteCategoria(${ri},${fi},this.value)" ${f.tipo?'':'disabled'} title="Categoria da fonte">
-            <option value="">Categoria…</option>
-            ${cats.map(c=>`<option value="${esc(c)}"${f.categoria===c?' selected':''}>${esc(c)}</option>`).join("")}
+          <select onchange="setFonteCategoria(${ri},${fi},this.value)" title="Fonte do Risco">
+            <option value="">Fonte do Risco…</option>
+            ${Object.keys(CATALOGO).map(t=>`<optgroup label="${esc(t)}">${Object.keys(CATALOGO[t]).map(c=>`<option value="${esc(c)}"${f.categoria===c?' selected':''}>${esc(c)}</option>`).join("")}</optgroup>`).join("")}
           </select>
           <span class="sep"></span>
           <button class="danger sm" onclick="removeFonte('${r.id}','${f.id}')" title="Remover esta fonte com sua causa e consequência">×</button>
@@ -759,27 +756,22 @@ function viewIdentificacao(){
       </div>
       <div class="field"><label>Objetivo</label>
         <select onchange="state.riscos[${ri}].objetivoId=this.value||null;touch()">${objetivoOptions(r.objetivoId)}</select></div>
-      <div class="field"><label>Risco (R${ri+1}) ${infoIcon('risco')}</label>
+      <div class="field"><label>Risco ${infoIcon('risco')}</label>
         <textarea oninput="state.riscos[${ri}].texto=this.value;touch();renderNav()" placeholder="Descreva o risco">${esc(r.texto)}</textarea></div>
-      <label style="font-weight:600;font-size:12.5px;display:block;margin-bottom:6px">Fonte do Risco ${infoIcon('fonte')} — cada fonte agrupa suas Possíveis Causas e Possíveis Consequências</label>
+      <label style="font-weight:600;font-size:12.5px;display:block;margin-bottom:6px">Fonte do Risco ${infoIcon('fonte')}</label>
       ${fontes}
       <button class="addbtn sm" onclick="addFonte('${r.id}')">+ fonte do risco</button>
     </div>`;
   }).join("");
   return `<div class="card"><h2>Identificação e Análise de Riscos</h2>
-      <div class="sub">Cabeçalho e Questão Geral replicados do Entendimento Preliminar — campos travados; edite na aba 1. Lista de riscos dinâmica.</div>
       ${cabecalhoReplicado('Unidade auditada')}
     </div>
     ${cards}
     <button class="primary" onclick="addRisco()">+ adicionar risco</button>`;
 }
-function setFonteTipo(ri,fi,v){
-  const f=state.riscos[ri].fontes[fi];
-  f.tipo=v; f.categoria=""; touch(); render();
-}
 function setFonteCategoria(ri,fi,v){
   const f=state.riscos[ri].fontes[fi];
-  f.categoria=v; touch(); render();
+  f.categoria=v; f.tipo=CAT2TIPO[v]||""; touch(); render();
 }
 function addRisco(){ state.riscos.push(novoRisco()); touch(); render(); }
 function removeRisco(id){
@@ -840,7 +832,7 @@ function viewMatriz(){
       <td><textarea class="sm" style="min-width:150px;min-height:40px" oninput="state.riscos[${ri}].matrizControles.aux3=this.value;touch()">${esc(r.matrizControles.aux3)}</textarea></td>
     </tr>`).join("");
   return `<div class="card"><h2>Matriz de Riscos e Controles</h2>
-    <div class="sub">Cabeçalho e Questão Geral replicados do Entendimento Preliminar — campos travados. Riscos replicados da Identificação; colunas calculadas automaticamente pelas fórmulas do Excel (travadas).</div>
+    <div class="sub">Riscos replicados da Identificação e Análise; colunas calculadas automaticamente pelas fórmulas do Excel.</div>
     ${cabecalhoReplicado('Unidade Auditada')}
     <div class="scroll-x"><table class="grid"><thead>
     <tr>
@@ -933,7 +925,7 @@ function viewPlanejamento(){
     }).join("");
   }
   return `<div class="card"><h2>Matriz de Planejamento</h2>
-      <div class="sub">Cabeçalho e Questão Geral replicados do Entendimento Preliminar — campos travados; edite na aba 1. Recebe apenas os riscos com Conclusão do Coordenador “Escopo”.</div>
+      <div class="sub">Recebe apenas os riscos com Conclusão do Coordenador “Escopo”.</div>
       ${cabecalhoReplicado('Unidade Auditada')}
     </div>
     ${blocos}
@@ -973,7 +965,7 @@ function gerarLinhasAchados(){
 function aSet(key,campo,val){ const a=state.achados.byKey[key]=state.achados.byKey[key]||{}; a[campo]=val; touch(); }
 function objetivosReplicados(){
   const objs=state.entendimento.objetivos;
-  return `<div class="field"><label>Objetivo(s) do Objeto da Auditoria <span class="pill">replicado</span></label>
+  return `<div class="field"><label>Objetivo(s) do Objeto da Auditoria</label>
     ${objs.map((o,i)=>`<input type="text" readonly style="margin-bottom:4px" value="Objetivo ${i+1}${o.texto?": "+esc(o.texto):""}">`).join("")}</div>`;
 }
 function viewAchados(isRef){
