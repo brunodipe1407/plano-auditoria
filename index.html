@@ -309,6 +309,8 @@ function estadoInicial(){
     meta:{versao:"1.0",criadoEm:nowISO(),atualizadoEm:nowISO()},
     entendimento:{
       unidadeAuditada:"", numBaseAuditoria:"", objeto:"", coordenador:"", equipe:"",
+      cronPrevistoInicio:"", cronPrevistoConclusao:"", cronRealizadoInicio:"", cronRealizadoConclusao:"",
+      relevanciaTema:"",
       elaboradoPor:"", elaboradoData:"", revisadoPor:"", revisadoData:"",
       supervisionadoPor:"", supervisionadoData:"",
       objetivos:[{id:uid(),texto:""}],
@@ -391,6 +393,8 @@ function tryLoadAutosave(){
 function migrate(obj){
   // garante campos ausentes
   obj.meta = obj.meta||{versao:"1.0"};
+  obj.entendimento = obj.entendimento||{};
+  ["cronPrevistoInicio","cronPrevistoConclusao","cronRealizadoInicio","cronRealizadoConclusao","relevanciaTema"].forEach(k=>{ if(obj.entendimento[k]==null) obj.entendimento[k]=""; });
   obj.planejamento = obj.planejamento||{questaoGeral:"",subquestoesPorRisco:{},respostaQuestaoGeral:""};
   obj.planejamento.subquestoesPorRisco = obj.planejamento.subquestoesPorRisco||{};
   obj.achados = obj.achados||{byKey:{}};
@@ -482,7 +486,7 @@ function setPath(path,value){
    RENDER PRINCIPAL
    ============================================================ */
 const TABS = [
-  {id:"entendimento",label:"1. Entendimento",grp:"Fluxo principal"},
+  {id:"entendimento",label:"1. Entendimento Preliminar",grp:"Fluxo principal"},
   {id:"identificacao",label:"2. Identificação e Análise",grp:"Fluxo principal"},
   {id:"matriz",label:"3. Matriz de Riscos e Controles",grp:"Fluxo principal"},
   {id:"calor",label:"4. Mapa de Calor",grp:"Fluxo principal"},
@@ -497,7 +501,7 @@ function progresso(tab){
   const e = state.entendimento;
   switch(tab){
     case "entendimento":{
-      const campos=[e.unidadeAuditada,e.numBaseAuditoria,e.objeto,e.coordenador,e.entendimentoObjeto,e.objetivos.some(o=>o.texto.trim())?"x":""];
+      const campos=[e.unidadeAuditada,e.numBaseAuditoria,e.objeto,e.coordenador,e.entendimentoObjeto,e.relevanciaTema,e.objetivos.some(o=>o.texto.trim())?"x":""];
       return pct(campos.filter(c=>(c||"").toString().trim()).length, campos.length);
     }
     case "identificacao":{
@@ -573,7 +577,7 @@ function render(){
 /* cabeçalho auto (Unidade/Base) reutilizado */
 function autoHeader(){
   const e=state.entendimento;
-  return `<div class="notice">Unidade Auditada: <b>${esc(e.unidadeAuditada||"—")}</b> &nbsp;|&nbsp; N° da Base: <b>${esc(e.numBaseAuditoria||"—")}</b> <span class="pill">propagado do Entendimento</span></div>`;
+  return `<div class="notice">Unidade Auditada: <b>${esc(e.unidadeAuditada||"—")}</b> &nbsp;|&nbsp; Base de Auditoria: <b>${esc(e.numBaseAuditoria||"—")}</b> <span class="pill">propagado do Entendimento</span></div>`;
 }
 
 /* ============================================================
@@ -585,25 +589,41 @@ function viewEntendimento(){
   let objetivos = e.objetivos.map((o,i)=>`
     <div class="subline">
       <span class="reftag">Objetivo ${i+1}</span>
-      <input type="text" value="${esc(o.texto)}" placeholder="Descreva o objetivo do trabalho"
+      <input type="text" value="${esc(o.texto)}" placeholder="Descreva o objetivo do objeto de auditoria"
         oninput="state.entendimento.objetivos[${i}].texto=this.value;touch()">
       <button class="danger sm" onclick="removeObjetivo('${o.id}')" title="Remover">×</button>
     </div>`).join("");
   return `
   <div class="card">
-    <div class="sectionbar">Entendimento — Cabeçalho-mestre</div>
+    <div class="sectionbar">Entendimento Preliminar</div>
     <div class="grid2">
       <div class="field"><label>Unidade Auditada ${infoIcon('objeto')}</label>
         <select onchange="setPath('entendimento.unidadeAuditada',this.value);render()">${optionList(UNIDADES,e.unidadeAuditada)}</select></div>
-      <div class="field"><label>N° da Base de Auditoria</label>
+      <div class="field"><label>Base de Auditoria</label>
         <input type="text" value="${esc(e.numBaseAuditoria)}" oninput="setPath('entendimento.numBaseAuditoria',this.value);renderTopCtx()"></div>
     </div>
-    <div class="field"><label>Objeto da Auditoria ${infoIcon('objeto')}</label>
-      <textarea oninput="setPath('entendimento.objeto',this.value)">${esc(e.objeto)}</textarea></div>
     <div class="grid2">
       <div class="field"><label>Coordenador</label>${dd(COORDENADORES,'entendimento.coordenador')}</div>
       <div class="field"><label>Equipe de Auditoria</label>
         <input type="text" value="${esc(e.equipe)}" oninput="setPath('entendimento.equipe',this.value)"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Cronograma Previsto</label>
+        <div class="grid2">
+          <div><span style="font-size:12px;color:var(--muted)">Início:</span>
+            <input type="date" value="${esc(e.cronPrevistoInicio)}" oninput="setPath('entendimento.cronPrevistoInicio',this.value)"></div>
+          <div><span style="font-size:12px;color:var(--muted)">Conclusão:</span>
+            <input type="date" value="${esc(e.cronPrevistoConclusao)}" oninput="setPath('entendimento.cronPrevistoConclusao',this.value)"></div>
+        </div>
+      </div>
+      <div class="field"><label>Cronograma Realizado</label>
+        <div class="grid2">
+          <div><span style="font-size:12px;color:var(--muted)">Início:</span>
+            <input type="date" value="${esc(e.cronRealizadoInicio)}" oninput="setPath('entendimento.cronRealizadoInicio',this.value)"></div>
+          <div><span style="font-size:12px;color:var(--muted)">Conclusão:</span>
+            <input type="date" value="${esc(e.cronRealizadoConclusao)}" oninput="setPath('entendimento.cronRealizadoConclusao',this.value)"></div>
+        </div>
+      </div>
     </div>
     <div class="grid3">
       <div class="field"><label>Elaborado por</label>${dd(AUDITORES,'entendimento.elaboradoPor')}
@@ -615,7 +635,15 @@ function viewEntendimento(){
     </div>
   </div>
   <div class="card">
-    <div class="sectionbar">Objetivos do Trabalho ${infoIcon('objetivo')}</div>
+    <div class="field"><label>Entendimento e Estrutura de Controle ${infoIcon('entendimentoObjeto')}</label>
+      <textarea oninput="setPath('entendimento.entendimentoObjeto',this.value)" style="min-height:110px">${esc(e.entendimentoObjeto)}</textarea></div>
+    <div class="field"><label>Objeto da Auditoria ${infoIcon('objeto')}</label>
+      <textarea oninput="setPath('entendimento.objeto',this.value)">${esc(e.objeto)}</textarea></div>
+    <div class="field"><label>Relevância do Tema</label>
+      <textarea oninput="setPath('entendimento.relevanciaTema',this.value)" style="min-height:110px">${esc(e.relevanciaTema)}</textarea></div>
+  </div>
+  <div class="card">
+    <div class="sectionbar">Objetivo(s) do Objeto da Auditoria ${infoIcon('objetivo')}</div>
     <div class="sub">Estes objetivos alimentam o dropdown “Objetivo” na Identificação de Riscos.</div>
     ${objetivos}
     <button class="addbtn sm" onclick="addObjetivo()">+ adicionar objetivo</button>
@@ -623,10 +651,11 @@ function viewEntendimento(){
   <div class="card">
     <div class="field"><label>Fluxo Descritivo / Mapeamento do Processo ${infoIcon('fluxo')}</label>
       <textarea oninput="setPath('entendimento.fluxoDescritivo',this.value)" placeholder="Descrever o fluxo do processo em nível de detalhe adequado… evitar insuficiência de informações e desperdício de recursos…">${esc(e.fluxoDescritivo)}</textarea></div>
-    <div class="field"><label>Normativas Aplicáveis ${infoIcon('normativas')}</label>
+    <div class="field"><label>Normativas Aplicáveis ao Processo ${infoIcon('normativas')}</label>
       <textarea oninput="setPath('entendimento.normativas',this.value)">${esc(e.normativas)}</textarea></div>
-    <div class="field"><label>Entendimento do Objeto do Trabalho ${infoIcon('entendimentoObjeto')}</label>
-      <textarea oninput="setPath('entendimento.entendimentoObjeto',this.value)" style="min-height:110px">${esc(e.entendimentoObjeto)}</textarea></div>
+    <div class="field"><label>Questão Geral de Auditoria ${infoIcon('questaoGeral')}</label>
+      <textarea oninput="setPath('planejamento.questaoGeral',this.value)">${esc(state.planejamento.questaoGeral)}</textarea>
+      <div class="sub" style="margin:4px 0 0">Compartilhada com a Matriz de Planejamento — editar aqui atualiza lá e vice-versa.</div></div>
   </div>`;
 }
 function addObjetivo(){ state.entendimento.objetivos.push({id:uid(),texto:""}); touch(); render(); }
@@ -996,7 +1025,7 @@ function viewTabelas(){
     <div class="scroll-x"><table class="grid"><thead><tr><th>Risco Inerente</th><th>Aval. Controle</th><th>Risco Residual</th><th>Teste Recomendado</th><th>Prioridade</th></tr></thead><tbody>${comb}</tbody></table></div></div>`;
 }
 function viewOrientacoes(){
-  const labels={objeto:"Objeto da Auditoria",objetivo:"Objetivo do Objeto",fluxo:"Fluxo Descritivo",normativas:"Normativas",entendimentoObjeto:"Entendimento do Objeto",questaoAud:"Questão de Auditoria",risco:"Risco",fonte:"Fonte do Risco",causas:"Possíveis Causas",consequencias:"Possíveis Consequências",probabilidade:"Probabilidade",impacto:"Impacto",inerente:"Risco Inerente",controles:"Controles-chave",avalControle:"Avaliação Preliminar do Controle",situacaoControle:"Situação do Controle",residual:"Risco Residual",comentarios:"Comentários",teste:"Tipo de Teste",conclusao:"Conclusão do auditor",justificativa:"Justificativa para não avaliar",questaoGeral:"Questão Geral",subquestao:"Subquestão",criterio:"Critério",procedimentos:"Procedimentos",respostaGeral:"Resposta à Questão Geral"};
+  const labels={objeto:"Objeto da Auditoria",objetivo:"Objetivo(s) do Objeto da Auditoria",fluxo:"Fluxo Descritivo",normativas:"Normativas Aplicáveis ao Processo",entendimentoObjeto:"Entendimento e Estrutura de Controle",questaoAud:"Questão de Auditoria",risco:"Risco",fonte:"Fonte do Risco",causas:"Possíveis Causas",consequencias:"Possíveis Consequências",probabilidade:"Probabilidade",impacto:"Impacto",inerente:"Risco Inerente",controles:"Controles-chave",avalControle:"Avaliação Preliminar do Controle",situacaoControle:"Situação do Controle",residual:"Risco Residual",comentarios:"Comentários",teste:"Tipo de Teste",conclusao:"Conclusão do auditor",justificativa:"Justificativa para não avaliar",questaoGeral:"Questão Geral",subquestao:"Subquestão",criterio:"Critério",procedimentos:"Procedimentos",respostaGeral:"Resposta à Questão Geral"};
   let rows=Object.keys(labels).map(k=>`<tr><td style="width:230px"><b>${esc(labels[k])}</b></td><td>${esc(ORIENT[k]||"")}</td></tr>`).join("");
   return `<div class="card"><h2>Orientações</h2><div class="sub">Textos-guia da aba Orientações do template. O ícone “i” em cada campo abre a orientação correspondente.</div>
     <table class="grid"><tbody>${rows}</tbody></table></div>`;
@@ -1037,16 +1066,20 @@ function buildReportHTML(){
     return `<tr><td>${l.riscoRef}</td><td>${l.subRef} ${esc(l.subTexto)}</td><td>${esc(a.situacao||"")}</td><td>${esc(a.conclusao||"")}</td><td>${esc(a.recomendacao||"")}</td><td>${esc(a.beneficio||"")}</td></tr>`;}).join("");
   return `
   <h1 style="color:#002060">CAGE/RS – Plano de Auditoria</h1>
-  <h2 style="color:#002060">1. Entendimento</h2>
+  <h2 style="color:#002060">1. Entendimento Preliminar</h2>
   <p><b>Unidade Auditada:</b> ${esc(e.unidadeAuditada)}</p>
-  <p><b>N° da Base:</b> ${esc(e.numBaseAuditoria)} &nbsp; <b>Coordenador:</b> ${esc(e.coordenador)}</p>
-  <p><b>Objeto:</b> ${esc(e.objeto)}</p>
-  <p><b>Equipe:</b> ${esc(e.equipe)}</p>
+  <p><b>Base de Auditoria:</b> ${esc(e.numBaseAuditoria)} &nbsp; <b>Coordenador:</b> ${esc(e.coordenador)}</p>
+  <p><b>Equipe de Auditoria:</b> ${esc(e.equipe)}</p>
+  <p><b>Cronograma Previsto:</b> Início: ${esc(e.cronPrevistoInicio)} &nbsp; Conclusão: ${esc(e.cronPrevistoConclusao)}</p>
+  <p><b>Cronograma Realizado:</b> Início: ${esc(e.cronRealizadoInicio)} &nbsp; Conclusão: ${esc(e.cronRealizadoConclusao)}</p>
   <p><b>Elaborado por:</b> ${esc(e.elaboradoPor)} (${esc(e.elaboradoData)}) &nbsp; <b>Revisado:</b> ${esc(e.revisadoPor)} (${esc(e.revisadoData)}) &nbsp; <b>Supervisionado:</b> ${esc(e.supervisionadoPor)} (${esc(e.supervisionadoData)})</p>
+  <p><b>Entendimento e Estrutura de Controle:</b> ${esc(e.entendimentoObjeto)}</p>
+  <p><b>Objeto da Auditoria:</b> ${esc(e.objeto)}</p>
+  <p><b>Relevância do Tema:</b> ${esc(e.relevanciaTema)}</p>
   ${objetivos}
-  <p><b>Fluxo Descritivo:</b> ${esc(e.fluxoDescritivo)}</p>
-  <p><b>Normativas:</b> ${esc(e.normativas)}</p>
-  <p><b>Entendimento do Objeto:</b> ${esc(e.entendimentoObjeto)}</p>
+  <p><b>Fluxo Descritivo / Mapeamento do Processo:</b> ${esc(e.fluxoDescritivo)}</p>
+  <p><b>Normativas Aplicáveis ao Processo:</b> ${esc(e.normativas)}</p>
+  <p><b>Questão Geral de Auditoria:</b> ${esc(state.planejamento.questaoGeral)}</p>
   <h2 style="color:#002060">2-3. Riscos, Causas e Consequências</h2>
   ${state.riscos.map((r,ri)=>`<p><b>R${ri+1}:</b> ${esc(r.texto)}<br><i>Causas:</i><br>${esc(relTextoCausas(r,ri)).replace(/\n/g,"<br>")}<br><i>Consequências:</i><br>${esc(relTextoConseq(r,ri)).replace(/\n/g,"<br>")}</p>`).join("")}
   <h2 style="color:#002060">Matriz de Riscos e Controles</h2>
@@ -1071,11 +1104,17 @@ function exportExcel(){
   const e=state.entendimento;
   function tbl(rows){ return rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join(""); }
   const sEnt = `<table>${tbl([
-    ["CAGE/RS – Plano de Auditoria"],["Unidade Auditada",e.unidadeAuditada],["N° da Base",e.numBaseAuditoria],
-    ["Objeto",e.objeto],["Coordenador",e.coordenador],["Equipe",e.equipe],
+    ["CAGE/RS – Plano de Auditoria"],["Unidade Auditada",e.unidadeAuditada],["Base de Auditoria",e.numBaseAuditoria],
+    ["Coordenador",e.coordenador],["Equipe de Auditoria",e.equipe],
+    ["Cronograma Previsto","Início: "+e.cronPrevistoInicio,"Conclusão: "+e.cronPrevistoConclusao],
+    ["Cronograma Realizado","Início: "+e.cronRealizadoInicio,"Conclusão: "+e.cronRealizadoConclusao],
     ["Elaborado por",e.elaboradoPor,e.elaboradoData],["Revisado por",e.revisadoPor,e.revisadoData],["Supervisionado por",e.supervisionadoPor,e.supervisionadoData],
-  ].concat(e.objetivos.map((o,i)=>["Objetivo "+(i+1),o.texto])).concat([
-    ["Fluxo Descritivo",e.fluxoDescritivo],["Normativas",e.normativas],["Entendimento do Objeto",e.entendimentoObjeto]
+    ["Entendimento e Estrutura de Controle",e.entendimentoObjeto],
+    ["Objeto da Auditoria",e.objeto],
+    ["Relevância do Tema",e.relevanciaTema],
+  ].concat(e.objetivos.map((o,i)=>["Objetivo "+(i+1)+" do Objeto da Auditoria",o.texto])).concat([
+    ["Fluxo Descritivo / Mapeamento do Processo",e.fluxoDescritivo],["Normativas Aplicáveis ao Processo",e.normativas],
+    ["Questão Geral de Auditoria",state.planejamento.questaoGeral]
   ]))}</table>`;
   const matrizHead=["Ref","Risco","Probabilidade","P","Impacto","I","P×I","Class. Inerente","Controles-Chave","Aval. Controle","Situação Controle","Residual","Síntese","Comentários","Teste","Prioridade","Conclusão","Justificativa"];
   const matrizRows=state.riscos.map((r,ri)=>{const c=calcRisco(r);return ["R"+(ri+1),r.texto,r.probabilidade,c.ps,r.impacto,c.is,c.pxi,c.iner,r.controlesChave,r.avaliacaoControle,c.ctrlDesc,c.residual,c.sintese,r.comentariosPreliminar,c.teste,c.prioridade,r.conclusaoCoordenador,r.justificativaEscopo];});
