@@ -57,7 +57,7 @@
   input[type=text],input[type=date],select,textarea{width:100%;font-family:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:#1b2233}
   input:focus,select:focus,textarea:focus{outline:2px solid var(--cage-teal);outline-offset:-1px;border-color:var(--cage-teal)}
   textarea{resize:vertical;min-height:64px}
-  select[disabled],input[readonly]{background:#eef1f7;color:#5a6580}
+  select[disabled],input[readonly],textarea[readonly]{background:#eef1f7;color:#5a6580}
   .req-empty{border-color:var(--cage-red)!important;background:#fff6f6}
   .info{cursor:help;color:var(--cage-teal);font-size:13px;border:1px solid var(--cage-teal);border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-weight:700;line-height:1;flex-shrink:0}
   .hint{display:none;background:#001640;color:#eaf1ff;font-size:12px;font-weight:400;padding:8px 10px;border-radius:6px;margin-top:5px;line-height:1.4}
@@ -487,7 +487,7 @@ function setPath(path,value){
    ============================================================ */
 const TABS = [
   {id:"entendimento",label:"1. Entendimento Preliminar",grp:"Fluxo principal"},
-  {id:"identificacao",label:"2. Identificação e Análise",grp:"Fluxo principal"},
+  {id:"identificacao",label:"2. Identificação e Análise de Riscos",grp:"Fluxo principal"},
   {id:"matriz",label:"3. Matriz de Riscos e Controles",grp:"Fluxo principal"},
   {id:"calor",label:"4. Mapa de Calor",grp:"Fluxo principal"},
   {id:"planejamento",label:"5. Matriz de Planejamento",grp:"Fluxo principal"},
@@ -577,7 +577,7 @@ function render(){
 /* cabeçalho auto (Unidade/Base) reutilizado */
 function autoHeader(){
   const e=state.entendimento;
-  return `<div class="notice">Unidade Auditada: <b>${esc(e.unidadeAuditada||"—")}</b> &nbsp;|&nbsp; Base de Auditoria: <b>${esc(e.numBaseAuditoria||"—")}</b> <span class="pill">propagado do Entendimento</span></div>`;
+  return `<div class="notice">Unidade Auditada: <b>${esc(e.unidadeAuditada||"—")}</b> &nbsp;|&nbsp; Base de Auditoria: <b>${esc(e.numBaseAuditoria||"—")}</b> <span class="pill">propagado do Entendimento Preliminar</span></div>`;
 }
 
 /* ============================================================
@@ -686,7 +686,7 @@ function viewIdentificacao(){
       return `
       <div class="fonte-block">
         <div class="fhead">
-          <span class="ref">Fonte ${ri+1}.${fi+1}</span> ${infoIcon('fonte')}
+          <span class="ref">Fonte do Risco ${ri+1}.${fi+1}</span> ${infoIcon('fonte')}
           <select onchange="setFonteTipo(${ri},${fi},this.value)" title="Tipo da fonte">
             <option value="">Fonte…</option>
             <option value="Fontes Internas"${f.tipo==='Fontes Internas'?' selected':''}>Fonte Interna</option>
@@ -700,12 +700,12 @@ function viewIdentificacao(){
           <button class="danger sm" onclick="removeFonte('${r.id}','${f.id}')" title="Remover esta fonte com sua causa e consequência">×</button>
         </div>
         <div class="grid2">
-          <div class="field"><label>Possível Causa (Cs ${ri+1}.${fi+1}) ${infoIcon('causas')}</label>
+          <div class="field"><label>Possíveis Causas (Cs ${ri+1}.${fi+1}) ${infoIcon('causas')}</label>
             <input type="text" value="${esc(f.causa)}" placeholder="Possível causa"${itens.length?` list="${dlid}"`:""}
               oninput="state.riscos[${ri}].fontes[${fi}].causa=this.value;touch()">
             ${itens.length?`<datalist id="${dlid}">${itens.map(t=>`<option value="${esc(t)}">`).join("")}</datalist>`:""}
           </div>
-          <div class="field"><label>Possível Consequência (Cq ${ri+1}.${fi+1}) ${infoIcon('consequencias')}</label>
+          <div class="field"><label>Possíveis Consequências (Cq ${ri+1}.${fi+1}) ${infoIcon('consequencias')}</label>
             <input type="text" value="${esc(f.consequencia)}" placeholder="Possível consequência"
               oninput="state.riscos[${ri}].fontes[${fi}].consequencia=this.value;touch()">
           </div>
@@ -722,16 +722,33 @@ function viewIdentificacao(){
         <select onchange="state.riscos[${ri}].objetivoId=this.value||null;touch()">${objetivoOptions(r.objetivoId)}</select></div>
       <div class="field"><label>Risco (R${ri+1}) ${infoIcon('risco')}</label>
         <textarea oninput="state.riscos[${ri}].texto=this.value;touch();renderNav()" placeholder="Descreva o risco">${esc(r.texto)}</textarea></div>
-      <label style="font-weight:600;font-size:12.5px;display:block;margin-bottom:6px">Fontes do Risco ${infoIcon('fonte')} — cada fonte agrupa uma causa e uma consequência</label>
+      <label style="font-weight:600;font-size:12.5px;display:block;margin-bottom:6px">Fonte do Risco ${infoIcon('fonte')} — cada fonte agrupa suas Possíveis Causas e Possíveis Consequências</label>
       ${fontes}
       <button class="addbtn sm" onclick="addFonte('${r.id}')">+ fonte do risco</button>
     </div>`;
   }).join("");
+  const e=state.entendimento;
   return `<div class="card"><h2>Identificação e Análise de Riscos</h2>
-      <div class="sub">Cabeçalho automático do Entendimento. Lista de riscos dinâmica (inicia com 3).</div>
-      ${autoHeader()}
-      <div class="field"><label>Elaborado por</label>
-        ${pessoaField(AUDITORES,'entendimento.elaboradoPor',state.entendimento.elaboradoPor)}</div>
+      <div class="sub">Cabeçalho e Questão Geral replicados do Entendimento Preliminar — campos travados; edite na aba 1. Lista de riscos dinâmica.</div>
+      <div class="grid2">
+        <div class="field"><label>Unidade auditada <span class="pill">replicado</span></label>
+          <input type="text" readonly value="${esc(e.unidadeAuditada)}"></div>
+        <div class="field"><label>Base de Auditoria <span class="pill">replicado</span></label>
+          <input type="text" readonly value="${esc(e.numBaseAuditoria)}"></div>
+      </div>
+      <div class="grid3">
+        <div class="field"><label>Elaborado por <span class="pill">replicado</span></label>
+          <input type="text" readonly value="${esc(e.elaboradoPor)}">
+          <input type="date" readonly style="margin-top:6px" value="${esc(e.elaboradoData)}"></div>
+        <div class="field"><label>Revisado por <span class="pill">replicado</span></label>
+          <input type="text" readonly value="${esc(e.revisadoPor)}">
+          <input type="date" readonly style="margin-top:6px" value="${esc(e.revisadoData)}"></div>
+        <div class="field"><label>Supervisionado por <span class="pill">replicado</span></label>
+          <input type="text" readonly value="${esc(e.supervisionadoPor)}">
+          <input type="date" readonly style="margin-top:6px" value="${esc(e.supervisionadoData)}"></div>
+      </div>
+      <div class="field"><label>Questão Geral de Auditoria ${infoIcon('questaoGeral')} <span class="pill">replicado</span></label>
+        <textarea readonly>${esc(state.planejamento.questaoGeral)}</textarea></div>
     </div>
     ${cards}
     <button class="primary" onclick="addRisco()">+ adicionar risco</button>`;
