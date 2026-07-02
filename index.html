@@ -588,13 +588,14 @@ function render(){
 }
 
 /* cabeçalho replicado do Entendimento Preliminar (campos travados) */
-function cabecalhoReplicado(labelUnidade){
+function cabecalhoReplicado(labelUnidade,labelBase,labelQuestao){
+  labelBase=labelBase||'Base de Auditoria'; labelQuestao=labelQuestao||'Questão Geral de Auditoria';
   const e=state.entendimento;
   return `
       <div class="grid2">
         <div class="field"><label>${labelUnidade} <span class="pill">replicado</span></label>
           <input type="text" readonly value="${esc(e.unidadeAuditada)}"></div>
-        <div class="field"><label>Base de Auditoria <span class="pill">replicado</span></label>
+        <div class="field"><label>${labelBase} <span class="pill">replicado</span></label>
           <input type="text" readonly value="${esc(e.numBaseAuditoria)}"></div>
       </div>
       <div class="grid3">
@@ -608,7 +609,7 @@ function cabecalhoReplicado(labelUnidade){
           <input type="text" readonly value="${esc(e.supervisionadoPor)}">
           <input type="date" readonly style="margin-top:6px" value="${esc(e.supervisionadoData)}"></div>
       </div>
-      <div class="field"><label>Questão Geral de Auditoria ${infoIcon('questaoGeral')} <span class="pill">replicado</span></label>
+      <div class="field"><label>${labelQuestao} ${infoIcon('questaoGeral')} <span class="pill">replicado</span></label>
         <textarea readonly>${esc(state.planejamento.questaoGeral)}</textarea></div>`;
 }
 
@@ -970,35 +971,50 @@ function gerarLinhasAchados(){
   return linhas;
 }
 function aSet(key,campo,val){ const a=state.achados.byKey[key]=state.achados.byKey[key]||{}; a[campo]=val; touch(); }
+function objetivosReplicados(){
+  const objs=state.entendimento.objetivos;
+  return `<div class="field"><label>Objetivo(s) do Objeto da Auditoria <span class="pill">replicado</span></label>
+    ${objs.map((o,i)=>`<input type="text" readonly style="margin-bottom:4px" value="Objetivo ${i+1}${o.texto?": "+esc(o.texto):""}">`).join("")}</div>`;
+}
 function viewAchados(isRef){
   const linhas=gerarLinhasAchados();
+  const cab = cabecalhoReplicado('Entidade auditada','Base de auditoria','Questão de Auditoria')+objetivosReplicados();
   if(!linhas.length){
     return `<div class="card"><h2>${isRef?"Matriz de Referência":"Matriz de Achados"}</h2>
-      ${autoHeader()}
-      <div class="notice">Sem linhas: gere subquestões para riscos <b>em escopo</b> na Matriz de Planejamento. (Fluxo religado — sem #REF!)</div></div>`;
+      ${cab}
+      <div class="notice">Sem linhas: gere subquestões para riscos <b>em escopo</b> na Matriz de Planejamento.</div></div>`;
   }
   const ta=(key,campo)=>{ const a=state.achados.byKey[key]||{}; return `<textarea class="sm" style="min-width:140px;min-height:48px" oninput="aSet('${key}','${campo}',this.value)">${esc(a[campo]||"")}</textarea>`; };
-  let head, rows;
+  let head, rows, subNote;
   if(isRef){
-    head=`<th>Subquestão</th><th>Risco</th><th>Causa(s)</th><th>Consequência(s)</th><th>Critério(s)</th><th>Situação Encontrada</th><th>Recomendação</th><th>Benefício Esperado</th><th>Observações do Revisor</th>`;
-    rows=linhas.map(l=>`<tr>
-      <td><b>${l.subRef}</b><br>${esc(l.subTexto)}</td>
-      <td><b>${l.riscoRef}</b><br>${esc(l.riscoTexto)}</td>
-      <td>${esc(l.causas)}</td><td>${esc(l.conseqs)}</td><td>${esc(l.criterio)}</td>
-      <td>${ta(l.key,'situacao')}</td><td>${ta(l.key,'recomendacao')}</td><td>${ta(l.key,'beneficio')}</td><td>${ta(l.key,'observacoes')}</td>
-    </tr>`).join("");
+    // réplica da fórmula FILTER do Excel: somente achados com Conclusão Final = "Insatisfatório"
+    const insatisf = linhas.filter(l=>((state.achados.byKey[l.key]||{}).conclusao||"")==="Insatisfatório");
+    subNote = `Derivada da Matriz de Achados — somente linhas com Conclusão Final “Insatisfatório” (fórmula FILTER do Excel). Campos travados; edite na Matriz de Achados.`;
+    head=`<th>Subquestão</th><th>Risco</th><th>Causa (s)</th><th>Consequência (s)</th><th>Critério (s)</th><th>Situação Encontrada</th><th>Recomendação</th><th>Benefício Esperado</th><th>Observações do Revisor</th>`;
+    rows=insatisf.map(l=>{ const a=state.achados.byKey[l.key]||{};
+      return `<tr>
+      <td class="calc"><b>${l.subRef}</b><br>${esc(l.subTexto)}</td>
+      <td class="calc"><b>${l.riscoRef}</b><br>${esc(l.riscoTexto)}</td>
+      <td class="calc">${esc(l.causas)}</td><td class="calc">${esc(l.conseqs)}</td><td class="calc">${esc(l.criterio)}</td>
+      <td class="calc">${esc(a.situacao||"")}</td><td class="calc">${esc(a.recomendacao||"")}</td><td class="calc">${esc(a.beneficio||"")}</td><td class="calc">${esc(a.observacoes||"")}</td>
+    </tr>`;}).join("");
+    if(!insatisf.length) rows=`<tr><td colspan="9" class="empty" style="padding:12px">Nenhum achado com Conclusão Final “Insatisfatório”.</td></tr>`;
   } else {
-    head=`<th>Risco</th><th>Causa(s)</th><th>Consequência(s)</th><th>Subquestão</th><th>Critério(s)</th><th>Situação Encontrada</th><th>Conclusão Final</th><th>Recomendação</th><th>Benefício Esperado</th><th>Observações do Revisor</th>`;
-    rows=linhas.map(l=>`<tr>
-      <td><b>${l.riscoRef}</b><br>${esc(l.riscoTexto)}</td>
-      <td>${esc(l.causas)}</td><td>${esc(l.conseqs)}</td>
-      <td><b>${l.subRef}</b><br>${esc(l.subTexto)}</td><td>${esc(l.criterio)}</td>
-      <td>${ta(l.key,'situacao')}</td><td>${ta(l.key,'conclusao')}</td><td>${ta(l.key,'recomendacao')}</td><td>${ta(l.key,'beneficio')}</td><td>${ta(l.key,'observacoes')}</td>
-    </tr>`).join("");
+    subNote = `Gerada a partir das subquestões planejadas (riscos em escopo). Risco, Causas, Consequências, Subquestão e Critério replicados; preencha os demais campos.`;
+    head=`<th>Risco</th><th>Causa (s)</th><th>Consequência (s)</th><th>Subquestão</th><th>Critério (s)</th><th>Situação Encontrada</th><th>Conclusão Final</th><th>Recomendação</th><th>Benefício Esperado</th><th>Observações do Revisor</th>`;
+    rows=linhas.map(l=>{ const a=state.achados.byKey[l.key]||{};
+      return `<tr>
+      <td class="calc"><b>${l.riscoRef}</b><br>${esc(l.riscoTexto)}</td>
+      <td class="calc">${esc(l.causas)}</td><td class="calc">${esc(l.conseqs)}</td>
+      <td class="calc"><b>${l.subRef}</b><br>${esc(l.subTexto)}</td><td class="calc">${esc(l.criterio)}</td>
+      <td>${ta(l.key,'situacao')}</td>
+      <td><select class="sm" onchange="aSet('${l.key}','conclusao',this.value);render()">${optionList(a.conclusao&&!CONCLUSAO_AVAL.includes(a.conclusao)?CONCLUSAO_AVAL.concat([a.conclusao]):CONCLUSAO_AVAL,a.conclusao||"")}</select></td>
+      <td>${ta(l.key,'recomendacao')}</td><td>${ta(l.key,'beneficio')}</td><td>${ta(l.key,'observacoes')}</td>
+    </tr>`;}).join("");
   }
   return `<div class="card"><h2>${isRef?"Matriz de Referência":"Matriz de Achados"}</h2>
-    <div class="sub">Gerada a partir das subquestões planejadas (riscos em escopo). ${isRef?"Ordem orientada à referência.":""}</div>
-    ${autoHeader()}
+    <div class="sub">${subNote}</div>
+    ${cab}
     <div class="scroll-x"><table class="grid"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 
