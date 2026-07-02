@@ -165,19 +165,34 @@
 /* ---------- Enums fixos ---------- */
 const PROB = ["Raro","Improvável","Possível","Provável","Esperado"];
 const PROB_SCORE = {Raro:1,"Improvável":2,"Possível":3,"Provável":4,Esperado:5};
+const PROB_DESC = {
+  Raro:"Excepcionalmente poderá até ocorrer, porém não há elementos ou informações que indiquem essa possibilidade.",
+  "Improvável":"O evento poderá ocorrer de forma inesperada, havendo poucos elementos ou informações que indicam essa possibilidade, ou repete-se com baixa frequência anual.",
+  "Possível":"Há elementos e/ou informações que indicam moderadamente essa possibilidade, ou repete-se com razoável frequência anual",
+  "Provável":"É esperado que o evento ocorra, pois os elementos e as informações disponíveis indicam de forma consistente essa possibilidade, ou repete-se com elevada frequência anual.",
+  Esperado:"Inequivocamente o evento ocorrerá, pois os elementos e informações disponíveis indicam claramente essa possibilidade"
+};
 const IMP = ["Irrelevante","Baixo","Moderado","Alto","Crítico"];
 const IMP_SCORE = {Irrelevante:1,Baixo:2,Moderado:3,Alto:4,"Crítico":5};
+const IMP_DESC = {
+  Irrelevante:"Degradação de operações ou atividades de processos, projetos ou programas da organização, porém causando impactos mínimos nos objetivos de prazo, custo, qualidade, escopo, imagem ou relacionados ao atendimento de metas, padrões ou à capacidade de entrega de produtos/serviços às partes interessadas (clientes internos/externos, beneficiários).",
+  Baixo:"Degradação de operações ou atividades de processos, projetos ou programas da organização, causando impactos pequenos nos objetivos.",
+  Moderado:"Interrupção de operações ou atividades de processos, projetos ou programas, causando impactos significativos nos objetivos, porém recuperáveis.",
+  Alto:"Interrupção de operações ou atividades de processos, projetos ou programas da organização, causando impactos de reversão muito difícil nos objetivos.",
+  "Crítico":"Paralisação de operações ou atividades de processos, projetos ou programas da organização, causando impactos irreversíveis/catastróficos nos objetivos."
+};
 const CTRL = ["Forte","Satisfatório","Mediano","Fraco","Inexistente"];
 const CTRL_SCORE = {Forte:5,"Satisfatório":4,Mediano:3,Fraco:2,Inexistente:1};
 const CTRL_FUNC = {Forte:"Efetivo","Satisfatório":"Necessita de pequenas melhorias",Mediano:"Necessita de grandes melhorias",Fraco:"Necessita ser redesenhado",Inexistente:"Necessário desenvolver"};
 const CTRL_DESC = {
-  Forte:"O controle funciona adequadamente. Institucionalizado e sustentado por ferramentas adequadas, em nível de “melhor prática”; mitiga o risco em todos os aspectos relevantes.",
-  "Satisfatório":"Pequenas inconsistências. Institucionalizado, passível de aperfeiçoamento, mas mitiga o risco razoavelmente.",
-  Mediano:"Apresenta inconsistências. Razoavelmente institucionalizado, pode falhar por não contemplar todos os aspectos ou por desenho/ferramentas inadequados.",
-  Fraco:"Grandes inconsistências. Não institucionalizado; na esfera pessoal dos operadores; em geral manual.",
+  Forte:"O controle funciona adequadamente. Controle institucionalizado e sustentado por ferramentas adequadas, podendo ser considerado em um nível de \"melhor prática\"; mitiga o risco em todos os aspectos relevantes.",
+  "Satisfatório":"O controle apresenta pequenas inconsistências. Controle institucionalizado e embora passível de aperfeiçoamento, é sustentado por ferramentas adequadas e mitiga o risco razoavelmente.",
+  Mediano:"O controle apresenta inconsistências. Controle razoavelmente institucionalizado, mas pode falhar por não contemplar todos os aspectos relevantes do risco ou porque seu desenho ou as ferramentas que o suportam não são adequados.",
+  Fraco:"O controle apresenta grandes inconsistências. Controle não institucionalizado; está na esfera de conhecimento pessoal dos operadores do processo; em geral realizado de maneira manual.",
   Inexistente:"Controle não existe, não funciona ou não está implementado."
 };
-const CONCLUSAO_ESCOPO = ["Escopo","Não será avaliado"];
+const CTRL_TESTE = {Forte:"Testes de controle","Satisfatório":"Testes de controle",Mediano:"Testes substantivos/Testes de Controles",Fraco:"Testes substantivos",Inexistente:"Testes substantivos"};
+const CONCLUSAO_ESCOPO = ["Escopo","Não será avaliado."];
 const CONCLUSAO_AVAL = ["Satisfatório","Insatisfatório","Inconclusivo","Não Aplicável"];
 const STATUS_EXEC = ["Não Iniciado","Em execução","Concluído"];
 const CLASSES_ORDER = ["Irrelevante","Baixo","Moderado","Alto","Crítico"];
@@ -192,9 +207,16 @@ function classInerente(pxi){
   return "Crítico";
 }
 
-/* ---------- Matriz combinada Inerente × Controle ---------- */
-const SINT_IRR = "Pelo princípio da eficiência e custo-benefício, não é justificável trabalhar estes riscos.";
-const SINT_BAIXO = "Pelo custo-benefício, não seria necessário trabalhar; mas poderão ser testados conforme avaliação do auditor.";
+/* ---------- Matriz combinada Inerente × Controle (textos literais do Excel, Tabelas!V4:AB28) ---------- */
+const SINT_IRR = "Considerando o princípio da eficiência e a relação custo-benefício, não é justificável trabalhar estes riscos.";
+const SINT_BAIXO = "Considerando o princípio da eficiência e a relação custo-benefício, não seria necessário trabalhar estes riscos, por serem baixos. Entretanto, eles poderão ser testados a depender da avaliação do auditor.";
+const SINT_INEX_MOD = "Controle inexiste. O exame poderá ser feito para confirmar consequências adversas da ausência do controle.";
+const SINT_INEX = "Controle inexiste. O exame poderá ser feito para confirmar consequências adversas da inadequação ou ausência do controle.";
+const SINT_FRACO = "Controle foi considerado inadequado. O exame poderá ser feito para confirmar consequências adversas da inadequação.";
+const SINT_MEDIANO = "Sua aplicação/efetividade pode ser testada, para verificar seu desempenho em relação aos objetivos pretendidos, ao mesmo tempo em que é preciso confirmar as consequências adversas de seu funcionamento não ser o ideal.";
+const SINT_MEDIANO2 = "Sua aplicação/efetividade pode ser testada, para verificar seu desempenho em relação aos objetivos pretendidos, ao mesmo tempo em que é preciso confirmar as consequencias adversas de seu funcionamento não ser o ideal.";
+const SINT_SATISF = "Controle foi considerado adequado na avaliação preliminar, mas sua aplicação/efetividade precisa ser testada, para verificar se está atingindo os objetivos pretendidos.";
+const SINT_FORTE = "Controle foi considerado forte na avaliação preliminar, mas sua aplicação/efetividade precisa ser testada, para verificar se está atingindo os objetivos pretendidos.";
 const T_OPC = "Realizar testes apenas se o auditor julgar necessário";
 const T_SUB = "Testes substantivos";
 const T_SUBP = "+Testes substantivos";
@@ -203,21 +225,21 @@ const TAB = {};
 function setTab(iner,ctrl,residual,sintese,teste,prio){ TAB[iner+"|"+ctrl]={residual,sintese,teste,prioridade:prio}; }
 CTRL.forEach(c=>setTab("Irrelevante",c,"Insignificante",SINT_IRR,T_OPC,"Mínima"));
 CTRL.forEach(c=>setTab("Baixo",c,"Baixo",SINT_BAIXO,T_OPC,"Muito baixa"));
-setTab("Moderado","Inexistente","Médio","Controle inexiste. Exame pode confirmar consequências adversas da ausência do controle.",T_SUB,"Alta");
-setTab("Moderado","Fraco","Baixo/Médio","Controle inadequado. Exame pode confirmar consequências adversas da inadequação.",T_SUBP,"Alta, dependerá do nível dos riscos que o controle pretende mitigar");
-setTab("Moderado","Mediano","Baixo/Médio","Efetividade pode ser testada; ao mesmo tempo confirmar consequências de funcionamento não ideal.",T_SUBC,"Alta, dependerá do nível dos riscos que o controle pretende mitigar");
-setTab("Moderado","Satisfatório","Baixo/Médio","Adequado na avaliação preliminar; testar aplicação/efetividade.",T_SUBC,"Baixa");
-setTab("Moderado","Forte","Baixo","Forte na avaliação preliminar; testar aplicação/efetividade.",T_SUBC,"Baixa");
-setTab("Alto","Inexistente","Alto","Controle inexiste. Exame pode confirmar consequências adversas.",T_SUB,"Muito alta");
-setTab("Alto","Fraco","Médio/Alto","Controle inadequado. Exame pode confirmar consequências da inadequação.",T_SUBP,"Alta");
-setTab("Alto","Mediano","Médio/Alto","Efetividade pode ser testada; confirmar consequências de funcionamento não ideal.",T_SUBC,"Alta, dependerá do nível dos riscos que o controle pretende mitigar");
-setTab("Alto","Satisfatório","Médio","Adequado na avaliação preliminar; testar aplicação/efetividade.",T_SUBC,"Baixa");
-setTab("Alto","Forte","Baixo/Médio","Forte na avaliação preliminar; testar aplicação/efetividade.",T_SUBC,"Baixa");
-setTab("Crítico","Inexistente","Extremo","Controle inexiste. Exame pode confirmar consequências adversas.",T_SUB,"Muito alta");
-setTab("Crítico","Fraco","Alto/Extremo","Controle inadequado. Exame pode confirmar consequências da inadequação.",T_SUBP,"Muito alta");
-setTab("Crítico","Mediano","Alto","Efetividade pode ser testada; confirmar consequências de funcionamento não ideal.",T_SUBC,"Muito alta");
-setTab("Crítico","Satisfatório","Médio/Alto","Adequado na avaliação preliminar; testar aplicação/efetividade.",T_SUBC,"Alta");
-setTab("Crítico","Forte","Médio","Forte na avaliação preliminar; testar aplicação/efetividade.",T_SUBC,"Alta");
+setTab("Moderado","Inexistente","Médio",SINT_INEX_MOD,T_SUB,"Alta");
+setTab("Moderado","Fraco","Baixo/Médio",SINT_FRACO,T_SUBP,"Alta, dependerá do nível dos riscos que o controle pretende mitigar");
+setTab("Moderado","Mediano","Baixo/Médio",SINT_MEDIANO,T_SUBC,"Alta, dependerá do nível dos riscos que o controle pretende mitigar");
+setTab("Moderado","Satisfatório","Baixo/Médio",SINT_SATISF,T_SUBC,"Baixa");
+setTab("Moderado","Forte","Baixo",SINT_FORTE,T_SUBC,"Baixa");
+setTab("Alto","Inexistente","Alto",SINT_INEX,T_SUB,"Muito alta");
+setTab("Alto","Fraco","Médio/Alto",SINT_FRACO,T_SUBP,"Alta");
+setTab("Alto","Mediano","Médio/Alto",SINT_MEDIANO2,T_SUBC,"Alta, dependerá do nível dos riscos que o controle pretende mitigar");
+setTab("Alto","Satisfatório","Médio",SINT_SATISF,T_SUBC,"Baixa");
+setTab("Alto","Forte","Baixo/Médio",SINT_FORTE,T_SUBC,"Baixa");
+setTab("Crítico","Inexistente","Extremo",SINT_INEX,T_SUB,"Muito alta");
+setTab("Crítico","Fraco","Alto/Extremo",SINT_FRACO,T_SUBP,"Muito alta");
+setTab("Crítico","Mediano","Alto",SINT_MEDIANO2,T_SUBC,"Muito alta");
+setTab("Crítico","Satisfatório","Médio/Alto",SINT_SATISF,T_SUBC,"Alta");
+setTab("Crítico","Forte","Médio",SINT_FORTE,T_SUBC,"Alta");
 
 /* ---------- Mapa de calor (pesos corrigidos) ---------- */
 const HEAT_IMP = {"Crítico":10,Alto:8,Moderado:5,Baixo:3,Irrelevante:1};
@@ -298,6 +320,7 @@ function novoRisco(){
     fontes:[novaFonte(),novaFonte()],
     probabilidade:"", impacto:"", controlesChave:"", avaliacaoControle:"",
     comentariosPreliminar:"", conclusaoCoordenador:"", justificativaEscopo:"",
+    matrizControles:{principal:"", aux1:"", aux2:"", aux3:""},
     override:{ classificacaoInerente:null, justificativaClassInerente:"",
                classificacaoResidual:null, justificativaClassResidual:"",
                testeRecomendado:null, justificativaTeste:"",
@@ -417,6 +440,8 @@ function migrate(obj){
     }
     r.fontes.forEach(f=>{ f.id=f.id||uid(); f.tipo=f.tipo||""; f.categoria=f.categoria||""; f.causa=f.causa||""; f.consequencia=f.consequencia||""; });
     delete r.fonteRisco; delete r.causas; delete r.consequencias;
+    r.matrizControles = r.matrizControles||{principal:"",aux1:"",aux2:"",aux3:""};
+    if(r.conclusaoCoordenador==="Não será avaliado") r.conclusaoCoordenador="Não será avaliado.";
   });
   return obj;
 }
@@ -574,6 +599,31 @@ function render(){
   window.scrollTo(0,sy);
 }
 
+/* cabeçalho replicado do Entendimento Preliminar (campos travados) */
+function cabecalhoReplicado(labelUnidade){
+  const e=state.entendimento;
+  return `
+      <div class="grid2">
+        <div class="field"><label>${labelUnidade} <span class="pill">replicado</span></label>
+          <input type="text" readonly value="${esc(e.unidadeAuditada)}"></div>
+        <div class="field"><label>Base de Auditoria <span class="pill">replicado</span></label>
+          <input type="text" readonly value="${esc(e.numBaseAuditoria)}"></div>
+      </div>
+      <div class="grid3">
+        <div class="field"><label>Elaborado por <span class="pill">replicado</span></label>
+          <input type="text" readonly value="${esc(e.elaboradoPor)}">
+          <input type="date" readonly style="margin-top:6px" value="${esc(e.elaboradoData)}"></div>
+        <div class="field"><label>Revisado por <span class="pill">replicado</span></label>
+          <input type="text" readonly value="${esc(e.revisadoPor)}">
+          <input type="date" readonly style="margin-top:6px" value="${esc(e.revisadoData)}"></div>
+        <div class="field"><label>Supervisionado por <span class="pill">replicado</span></label>
+          <input type="text" readonly value="${esc(e.supervisionadoPor)}">
+          <input type="date" readonly style="margin-top:6px" value="${esc(e.supervisionadoData)}"></div>
+      </div>
+      <div class="field"><label>Questão Geral de Auditoria ${infoIcon('questaoGeral')} <span class="pill">replicado</span></label>
+        <textarea readonly>${esc(state.planejamento.questaoGeral)}</textarea></div>`;
+}
+
 /* cabeçalho auto (Unidade/Base) reutilizado */
 function autoHeader(){
   const e=state.entendimento;
@@ -727,28 +777,9 @@ function viewIdentificacao(){
       <button class="addbtn sm" onclick="addFonte('${r.id}')">+ fonte do risco</button>
     </div>`;
   }).join("");
-  const e=state.entendimento;
   return `<div class="card"><h2>Identificação e Análise de Riscos</h2>
       <div class="sub">Cabeçalho e Questão Geral replicados do Entendimento Preliminar — campos travados; edite na aba 1. Lista de riscos dinâmica.</div>
-      <div class="grid2">
-        <div class="field"><label>Unidade auditada <span class="pill">replicado</span></label>
-          <input type="text" readonly value="${esc(e.unidadeAuditada)}"></div>
-        <div class="field"><label>Base de Auditoria <span class="pill">replicado</span></label>
-          <input type="text" readonly value="${esc(e.numBaseAuditoria)}"></div>
-      </div>
-      <div class="grid3">
-        <div class="field"><label>Elaborado por <span class="pill">replicado</span></label>
-          <input type="text" readonly value="${esc(e.elaboradoPor)}">
-          <input type="date" readonly style="margin-top:6px" value="${esc(e.elaboradoData)}"></div>
-        <div class="field"><label>Revisado por <span class="pill">replicado</span></label>
-          <input type="text" readonly value="${esc(e.revisadoPor)}">
-          <input type="date" readonly style="margin-top:6px" value="${esc(e.revisadoData)}"></div>
-        <div class="field"><label>Supervisionado por <span class="pill">replicado</span></label>
-          <input type="text" readonly value="${esc(e.supervisionadoPor)}">
-          <input type="date" readonly style="margin-top:6px" value="${esc(e.supervisionadoData)}"></div>
-      </div>
-      <div class="field"><label>Questão Geral de Auditoria ${infoIcon('questaoGeral')} <span class="pill">replicado</span></label>
-        <textarea readonly>${esc(state.planejamento.questaoGeral)}</textarea></div>
+      ${cabecalhoReplicado('Unidade auditada')}
     </div>
     ${cards}
     <button class="primary" onclick="addRisco()">+ adicionar risco</button>`;
@@ -840,19 +871,37 @@ function viewMatriz(){
       <td>${overrideCell(ri,'prioridade',c.prioCalc,["Mínima","Muito baixa","Baixa","Alta","Muito alta","Alta, dependerá do nível dos riscos que o controle pretende mitigar"])}</td>
       <td><select class="sm" onchange="state.riscos[${ri}].conclusaoCoordenador=this.value;touch();render()">${optionList(CONCLUSAO_ESCOPO,r.conclusaoCoordenador)}</select>
         ${r.conclusaoCoordenador==="Escopo"?'<span class="badge escopo-yes">em escopo</span>':r.conclusaoCoordenador?'<span class="badge escopo-no">fora</span>':''}</td>
-      <td><textarea class="sm ${r.conclusaoCoordenador==='Não será avaliado'&&!r.justificativaEscopo.trim()?'req-empty':''}" style="min-width:130px;min-height:40px" oninput="state.riscos[${ri}].justificativaEscopo=this.value;touch()" placeholder="${r.conclusaoCoordenador==='Não será avaliado'?'Justificativa obrigatória':''}">${esc(r.justificativaEscopo)}</textarea></td>
+      <td><textarea class="sm ${r.conclusaoCoordenador==='Não será avaliado.'&&!r.justificativaEscopo.trim()?'req-empty':''}" style="min-width:130px;min-height:40px" oninput="state.riscos[${ri}].justificativaEscopo=this.value;touch()" placeholder="${r.conclusaoCoordenador==='Não será avaliado.'?'Justificativa obrigatória':''}">${esc(r.justificativaEscopo)}</textarea></td>
     </tr>`;
   }).join("");
+  const mcRows = state.riscos.map((r,ri)=>`<tr>
+      <td style="min-width:160px"><b>R${ri+1}</b>${r.texto?" - "+esc(r.texto):""}</td>
+      <td><textarea class="sm" style="min-width:150px;min-height:40px" oninput="state.riscos[${ri}].matrizControles.principal=this.value;touch()">${esc(r.matrizControles.principal)}</textarea></td>
+      <td><textarea class="sm" style="min-width:150px;min-height:40px" oninput="state.riscos[${ri}].matrizControles.aux1=this.value;touch()">${esc(r.matrizControles.aux1)}</textarea></td>
+      <td><textarea class="sm" style="min-width:150px;min-height:40px" oninput="state.riscos[${ri}].matrizControles.aux2=this.value;touch()">${esc(r.matrizControles.aux2)}</textarea></td>
+      <td><textarea class="sm" style="min-width:150px;min-height:40px" oninput="state.riscos[${ri}].matrizControles.aux3=this.value;touch()">${esc(r.matrizControles.aux3)}</textarea></td>
+    </tr>`).join("");
   return `<div class="card"><h2>Matriz de Riscos e Controles</h2>
-    <div class="sub">Mesmo conjunto de riscos da Identificação. Colunas de cálculo ao vivo; permitido override com justificativa.</div>
-    ${autoHeader()}
+    <div class="sub">Cabeçalho e Questão Geral replicados do Entendimento Preliminar — campos travados. Riscos replicados da Identificação; colunas de cálculo automático (fórmulas do Excel); permitido ajuste manual com justificativa.</div>
+    ${cabecalhoReplicado('Unidade Auditada')}
+    <div class="scroll-x"><table class="grid"><thead>
+    <tr>
+      <th colspan="3">Identificação dos Riscos</th>
+      <th colspan="6">Avaliação do Risco Inerente</th>
+      <th colspan="3">Avaliação Preliminar do Risco de Controle</th>
+      <th colspan="7">Definição de Escopo</th>
+    </tr>
+    <tr>
+      <th>Objetivo</th><th>Referência do Risco</th><th>Risco</th>
+      <th>Probabilidade</th><th>Probabilidade (P)</th><th>Impacto</th><th>Impacto (I)</th><th>Índice Inerente (P x I)</th>
+      <th>Classificação do Risco Inerente</th><th>Controles-Chave</th><th>Avaliação Preliminar do Controle (Teste de Desenho)</th><th>Situação do Controle</th>
+      <th>Classificação do Risco Residual (Após Teste de Desenho)</th><th>Síntese da Avaliação Preliminar</th><th>Comentários Sobre a Avaliação Preliminar</th><th>Teste Recomendado</th><th>Prioridade</th>
+      <th>Conclusão do Coordenador</th><th>Justificativa para incluir ou excluir risco da avaliação</th>
+    </tr></thead><tbody>${rows}</tbody></table></div></div>
+  <div class="card"><div class="sectionbar">Matriz de Controles</div>
     <div class="scroll-x"><table class="grid"><thead><tr>
-      <th>Objetivo</th><th>Ref</th><th>Risco</th>
-      <th>Probabilidade</th><th>P</th><th>Impacto</th><th>I</th><th>P×I</th>
-      <th>Class. Inerente</th><th>Controles-Chave</th><th>Aval. Controle</th><th>Situação do Controle</th>
-      <th>Class. Residual</th><th>Síntese</th><th>Comentários</th><th>Teste Recomendado</th><th>Prioridade</th>
-      <th>Conclusão Coord.</th><th>Justificativa</th>
-    </tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      <th>Risco</th><th>Controle Principal</th><th>Controle Auxiliar 1</th><th>Controle Auxiliar 2</th><th>Controle Auxiliar 3</th>
+    </tr></thead><tbody>${mcRows}</tbody></table></div></div>`;
 }
 
 /* ============================================================
@@ -1024,22 +1073,29 @@ function inserirComoCausa(tipo,cat,texto){
   setSaveState("Causa inserida em R"+(state.riscos.indexOf(r)+1));
 }
 function viewTabelas(){
-  const linhasCtrl = CTRL.map(c=>`<tr><td><b>${c}</b></td><td style="text-align:center">${CTRL_SCORE[c]}</td><td>${esc(CTRL_FUNC[c])}</td><td>${esc(CTRL_DESC[c])}</td></tr>`).join("");
-  const faixas=[["1–5","Irrelevante"],["6–10","Baixo"],["11–15","Moderado"],["16–20","Alto"],["21–25","Crítico"]];
-  let comb = Object.keys(TAB).map(k=>{ const [i,c]=k.split("|"); const t=TAB[k];
-    return `<tr><td>${clzSpan(i)}</td><td>${esc(c)}</td><td>${esc(t.residual)}</td><td>${esc(t.teste)}</td><td>${esc(t.prioridade)}</td></tr>`;}).join("");
-  return `<div class="card"><h2>Tabelas (referência)</h2><div class="sub">Escalas e matriz de cálculo usadas pelo motor.</div></div>
-  <div class="card"><div class="sectionbar">Probabilidade & Impacto (1–5)</div>
-    <div class="grid2">
-      <table class="grid"><thead><tr><th>Probabilidade</th><th>Pontos</th></tr></thead><tbody>${PROB.map(p=>`<tr><td>${p}</td><td style="text-align:center">${PROB_SCORE[p]}</td></tr>`).join("")}</tbody></table>
-      <table class="grid"><thead><tr><th>Impacto</th><th>Pontos</th></tr></thead><tbody>${IMP.map(p=>`<tr><td>${p}</td><td style="text-align:center">${IMP_SCORE[p]}</td></tr>`).join("")}</tbody></table>
-    </div></div>
-  <div class="card"><div class="sectionbar">Classificação do Risco Inerente (P×I, faixas contíguas)</div>
-    <table class="grid"><thead><tr><th>Faixa (P×I)</th><th>Classificação</th></tr></thead><tbody>${faixas.map(f=>`<tr><td>${f[0]}</td><td>${clzSpan(f[1])}</td></tr>`).join("")}</tbody></table></div>
-  <div class="card"><div class="sectionbar">Níveis de Confiança no Controle</div>
-    <table class="grid"><thead><tr><th>Nível</th><th>Pontos</th><th>Funcionamento</th><th>Descrição</th></tr></thead><tbody>${linhasCtrl}</tbody></table></div>
-  <div class="card"><div class="sectionbar">Matriz combinada Inerente × Controle → Residual / Teste / Prioridade</div>
-    <div class="scroll-x"><table class="grid"><thead><tr><th>Risco Inerente</th><th>Aval. Controle</th><th>Risco Residual</th><th>Teste Recomendado</th><th>Prioridade</th></tr></thead><tbody>${comb}</tbody></table></div></div>`;
+  const linhasProb = PROB.map(p=>`<tr><td><b>${p}</b></td><td>${esc(PROB_DESC[p])}</td><td style="text-align:center">${PROB_SCORE[p]}</td></tr>`).join("");
+  const linhasImp = IMP.map(p=>`<tr><td><b>${p}</b></td><td>${esc(IMP_DESC[p])}</td><td style="text-align:center">${IMP_SCORE[p]}</td></tr>`).join("");
+  const faixas=[["Irrelevante","De 1 a 5"],["Baixo","De 6 a 10"],["Moderado","De 12 a 15"],["Alto","De 16 a 20"],["Crítico","De 21 a 25"]];
+  const linhasCtrl = CTRL.map(c=>`<tr><td style="text-align:center">${CTRL_SCORE[c]}</td><td><b>${c}</b></td><td>${esc(CTRL_FUNC[c])}</td><td>${esc(CTRL_DESC[c])}</td><td>${esc(CTRL_TESTE[c])}</td></tr>`).join("");
+  const rrFaixas=[["Irrelevante","De 1 a 5"],["Baixo","De 6 a 10"],["Moderado","De 12 a 15"],["Alto","De 16 a 20"],["Crítico","De 21 a 25"]];
+  const ctrlOrdemExcel=["Inexistente","Fraco","Mediano","Satisfatório","Forte"];
+  let comb = ["Irrelevante","Baixo","Moderado","Alto","Crítico"].flatMap(i=>ctrlOrdemExcel.map(c=>{ const t=TAB[i+"|"+c];
+    return `<tr><td>${clzSpan(i)}</td><td>${esc(c)}</td><td>${esc(t.residual)}</td><td>${esc(t.sintese)}</td><td>${esc(t.teste)}</td><td>${esc(t.prioridade)}</td></tr>`;})).join("");
+  return `<div class="card"><h2>Tabelas (referência)</h2><div class="sub">Escalas e quadros usados pelo motor de cálculo — conteúdo idêntico à aba “Tabelas” do Excel.</div></div>
+  <div class="card"><div class="sectionbar">Probabilidade</div>
+    <table class="grid"><thead><tr><th>Classificação</th><th>Descrição</th><th>Pontuação</th></tr></thead><tbody>${linhasProb}</tbody></table>
+    <p class="sub" style="margin-top:8px">Fonte: Brasil. Tribunal de Contas da União. Roteiro de Auditoria de Gestão de Riscos. Brasília: TCU, Secretaria de Métodos e Suporte ao Controle Externo, 2017. (adaptada)</p></div>
+  <div class="card"><div class="sectionbar">Impacto</div>
+    <table class="grid"><thead><tr><th>Classificação</th><th>Descrição</th><th>Pontuação</th></tr></thead><tbody>${linhasImp}</tbody></table></div>
+  <div class="card"><div class="sectionbar">Nível de Risco Inerente (RI)</div>
+    <table class="grid"><thead><tr><th>Classificação</th><th>Pontuação</th></tr></thead><tbody>${faixas.map(f=>`<tr><td>${clzSpan(f[0])}</td><td>${f[1]}</td></tr>`).join("")}</tbody></table></div>
+  <div class="card"><div class="sectionbar">Nível de Confiança no Controle (RC)</div>
+    <div class="scroll-x"><table class="grid"><thead><tr><th>Pontuação</th><th>Avaliação Preliminar</th><th>Funcionamento</th><th>Descrição</th><th>Teste recomendado</th></tr></thead><tbody>${linhasCtrl}</tbody></table></div>
+    <p class="sub" style="margin-top:8px">* Não há controle perfeito. Todos têm limitações que impedem que NC seja igual a 1 (um). Por isto, não há RC &lt; 0,20. Limitações do controle: relação custo-benefício; burla pela administração; conluio; erros de julgamento; falha humana (causada por fadiga, doença...); eventos externos.</p></div>
+  <div class="card"><div class="sectionbar">Nível de Risco Residual (RR)</div>
+    <table class="grid"><thead><tr><th>Classificação</th><th>Pontuação</th></tr></thead><tbody>${rrFaixas.map(f=>`<tr><td>${clzSpan(f[0])}</td><td>${f[1]}</td></tr>`).join("")}</tbody></table></div>
+  <div class="card"><div class="sectionbar">Quadro auxiliar para definição dos Tipos de Testes</div>
+    <div class="scroll-x"><table class="grid"><thead><tr><th>Risco inerente</th><th>Avaliação preliminar do Controle</th><th>Risco Residual</th><th>Comentário</th><th>Tipo de Teste</th><th>Prioridade</th></tr></thead><tbody>${comb}</tbody></table></div></div>`;
 }
 function viewOrientacoes(){
   const labels={objeto:"Objeto da Auditoria",objetivo:"Objetivo(s) do Objeto da Auditoria",fluxo:"Fluxo Descritivo",normativas:"Normativas Aplicáveis ao Processo",entendimentoObjeto:"Entendimento e Estrutura de Controle",questaoAud:"Questão de Auditoria",risco:"Risco",fonte:"Fonte do Risco",causas:"Possíveis Causas",consequencias:"Possíveis Consequências",probabilidade:"Probabilidade",impacto:"Impacto",inerente:"Risco Inerente",controles:"Controles-chave",avalControle:"Avaliação Preliminar do Controle",situacaoControle:"Situação do Controle",residual:"Risco Residual",comentarios:"Comentários",teste:"Tipo de Teste",conclusao:"Conclusão do auditor",justificativa:"Justificativa para não avaliar",questaoGeral:"Questão Geral",subquestao:"Subquestão",criterio:"Critério",procedimentos:"Procedimentos",respostaGeral:"Resposta à Questão Geral"};
@@ -1100,7 +1156,10 @@ function buildReportHTML(){
   <h2 style="color:#002060">2-3. Riscos, Causas e Consequências</h2>
   ${state.riscos.map((r,ri)=>`<p><b>R${ri+1}:</b> ${esc(r.texto)}<br><i>Causas:</i><br>${esc(relTextoCausas(r,ri)).replace(/\n/g,"<br>")}<br><i>Consequências:</i><br>${esc(relTextoConseq(r,ri)).replace(/\n/g,"<br>")}</p>`).join("")}
   <h2 style="color:#002060">Matriz de Riscos e Controles</h2>
-  <table border="1" cellspacing="0" cellpadding="4"><tr><th>Ref</th><th>Risco</th><th>Prob.</th><th>Impacto</th><th>P×I</th><th>Class. Inerente</th><th>Controle</th><th>Residual</th><th>Teste</th><th>Prioridade</th><th>Conclusão</th></tr>${riscosHTML}</table>
+  <table border="1" cellspacing="0" cellpadding="4"><tr><th>Referência do Risco</th><th>Risco</th><th>Probabilidade</th><th>Impacto</th><th>Índice Inerente (P x I)</th><th>Classificação do Risco Inerente</th><th>Avaliação Preliminar do Controle (Teste de Desenho)</th><th>Classificação do Risco Residual (Após Teste de Desenho)</th><th>Teste Recomendado</th><th>Prioridade</th><th>Conclusão do Coordenador</th></tr>${riscosHTML}</table>
+  <h3 style="color:#002060">Matriz de Controles</h3>
+  <table border="1" cellspacing="0" cellpadding="4"><tr><th>Risco</th><th>Controle Principal</th><th>Controle Auxiliar 1</th><th>Controle Auxiliar 2</th><th>Controle Auxiliar 3</th></tr>
+  ${state.riscos.map((r,ri)=>`<tr><td>R${ri+1}${r.texto?" - "+esc(r.texto):""}</td><td>${esc(r.matrizControles.principal)}</td><td>${esc(r.matrizControles.aux1)}</td><td>${esc(r.matrizControles.aux2)}</td><td>${esc(r.matrizControles.aux3)}</td></tr>`).join("")}</table>
   <h2 style="color:#002060">Matriz de Planejamento</h2>
   <p><b>Questão Geral:</b> ${esc(state.planejamento.questaoGeral)}</p>
   ${planHTML}
@@ -1133,9 +1192,10 @@ function exportExcel(){
     ["Fluxo Descritivo / Mapeamento do Processo",e.fluxoDescritivo],["Normativas Aplicáveis ao Processo",e.normativas],
     ["Questão Geral de Auditoria",state.planejamento.questaoGeral]
   ]))}</table>`;
-  const matrizHead=["Ref","Risco","Probabilidade","P","Impacto","I","P×I","Class. Inerente","Controles-Chave","Aval. Controle","Situação Controle","Residual","Síntese","Comentários","Teste","Prioridade","Conclusão","Justificativa"];
+  const matrizHead=["Referência do Risco","Risco","Probabilidade","Probabilidade (P)","Impacto","Impacto (I)","Índice Inerente (P x I)","Classificação do Risco Inerente","Controles-Chave","Avaliação Preliminar do Controle (Teste de Desenho)","Situação do Controle","Classificação do Risco Residual (Após Teste de Desenho)","Síntese da Avaliação Preliminar","Comentários Sobre a Avaliação Preliminar","Teste Recomendado","Prioridade","Conclusão do Coordenador","Justificativa para incluir ou excluir risco da avaliação"];
   const matrizRows=state.riscos.map((r,ri)=>{const c=calcRisco(r);return ["R"+(ri+1),r.texto,r.probabilidade,c.ps,r.impacto,c.is,c.pxi,c.iner,r.controlesChave,r.avaliacaoControle,c.ctrlDesc,c.residual,c.sintese,r.comentariosPreliminar,c.teste,c.prioridade,r.conclusaoCoordenador,r.justificativaEscopo];});
-  const sMatriz=`<table><tr>${matrizHead.map(h=>`<th>${esc(h)}</th>`).join("")}</tr>${tbl(matrizRows)}</table>`;
+  const sMatriz=`<table><tr>${matrizHead.map(h=>`<th>${esc(h)}</th>`).join("")}</tr>${tbl(matrizRows)}</table>
+  <table><tr><th>Risco</th><th>Controle Principal</th><th>Controle Auxiliar 1</th><th>Controle Auxiliar 2</th><th>Controle Auxiliar 3</th></tr>${tbl(state.riscos.map((r,ri)=>["R"+(ri+1)+(r.texto?" - "+r.texto:""),r.matrizControles.principal,r.matrizControles.aux1,r.matrizControles.aux2,r.matrizControles.aux3]))}</table>`;
   const planRows=[]; riscosEmEscopo().forEach(r=>{const ri=state.riscos.indexOf(r);subsDoRisco(r.id).forEach((s,si)=>planRows.push(["R"+(ri+1),(ri+1)+"."+(si+1),s.texto,s.criterio||"",s.procedimentos||"","PT"+(ri+1)+"."+(si+1)]));});
   const sPlan=`<table><tr><th>Risco</th><th>Subq.</th><th>Subquestão</th><th>Critério</th><th>Procedimentos</th><th>PT</th></tr>${tbl(planRows)}</table>`;
   const achRows=gerarLinhasAchados().map(l=>{const a=state.achados.byKey[l.key]||{};return [l.riscoRef,l.riscoTexto,l.causas,l.conseqs,l.subRef+" "+l.subTexto,l.criterio,a.situacao||"",a.conclusao||"",a.recomendacao||"",a.beneficio||"",a.observacoes||""];});
