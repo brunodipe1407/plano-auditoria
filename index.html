@@ -70,11 +70,11 @@
   .subline{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
   .subline .reftag{font-weight:600;color:#3a4a78;min-width:62px;padding-top:8px;font-size:12px}
   .subline input{flex:1}
-  .fi-body{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
-  .fonte-sel{display:flex;gap:6px}
-  .fonte-sel select{flex:1;font-size:12px;padding:4px 6px;color:#3a4a78}
-  .fonte-sel button{flex-shrink:0}
-  .fonte-item{padding-bottom:8px;border-bottom:1px dashed #e2e6f0;margin-bottom:8px}
+  .fonte-block{border:1px solid var(--line);border-left:3px solid var(--cage-teal);border-radius:8px;padding:10px 12px 2px;margin-bottom:10px;background:#fbfcfe}
+  .fonte-block .fhead{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .fonte-block .fhead .ref{font-weight:700;color:var(--cage-navy);font-size:13px;white-space:nowrap}
+  .fonte-block .fhead select{flex:1;min-width:140px;max-width:240px;font-size:12.5px;padding:5px 7px;color:#3a4a78}
+  .fonte-block .fhead .sep{flex:1}
   .addbtn{background:#e3f8f5;color:#00665c;border:1px dashed var(--cage-teal)}
   .risk-card{border-left:4px solid var(--cage-navy)}
   .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
@@ -263,7 +263,7 @@ const ORIENT = {
   entendimentoObjeto:"Descrever de forma sintética o entendimento do auditor, obtido após seu estudo dos elementos e informações relacionados ao objeto, tais como a relevância do objeto selecionado, fluxos de processos, sistemas envolvidos, a estrutura organizacional, os responsáveis, relatórios anteriores, organogramas, políticas e normativas que regulam o objeto, processos relacionados ao objeto, entre outros, de forma que um terceiro, ao ler o entendimento, tenha uma visão dos principais componentes do objeto e seu funcionamento.",
   questaoAud:"Elemento que define o objetivo da auditoria e constitui a base da estrutura das análises que permitirão chegar à conclusão sobre os controles.",
   risco:"Possibilidade de ocorrência de um evento que tenha impacto no atingimento dos objetivos da organização. Técnicas de identificação: brainstorming, questionários, entrevistas, análise SWOT, dados históricos, diagrama de causa e efeito, opinião de especialistas.",
-  fonte:"Relacionar a Fonte do Risco (tipo e categoria) associada a cada possível causa e a cada possível consequência. Um mesmo risco pode ter causas e consequências com fontes distintas (ex.: uma causa de Governança e outra de Processos).",
+  fonte:"Relacionar as Fontes do Risco. Cada fonte (tipo e categoria) agrupa uma possível causa e a respectiva possível consequência. Um mesmo risco pode ter várias fontes (ex.: uma de Governança e outra de Processos), cada qual com sua causa e consequência.",
   causas:"Consistem nas situações que dão origem aos riscos, podendo ser descritas por meio da conjugação de possíveis fontes e de vulnerabilidades a elas associadas.",
   consequencias:"Consistem nos resultados da materialização dos riscos que afetam os objetivos.",
   probabilidade:"Avaliar a probabilidade do risco com base nos critérios sugeridos na aba “Tabelas”. Para estimar a probabilidade, considere que todos os controles falharam.",
@@ -291,12 +291,11 @@ let _seq = 1;
 function uid(){ return "i"+(_seq++)+"_"+Math.floor(Math.random()*1e6); }
 function nowISO(){ return new Date().toISOString(); }
 
-function novoItemComFonte(){ return {id:uid(), texto:"", fonte:{tipo:"",categoria:""}}; }
+function novaFonte(){ return {id:uid(), tipo:"", categoria:"", causa:"", consequencia:""}; }
 function novoRisco(){
   return {
     id:uid(), objetivoId:null, texto:"",
-    causas:[novoItemComFonte(),novoItemComFonte()],
-    consequencias:[novoItemComFonte(),novoItemComFonte()],
+    fontes:[novaFonte(),novaFonte()],
     probabilidade:"", impacto:"", controlesChave:"", avaliacaoControle:"",
     comentariosPreliminar:"", conclusaoCoordenador:"", justificativaEscopo:"",
     override:{ classificacaoInerente:null, justificativaClassInerente:"",
@@ -398,13 +397,22 @@ function migrate(obj){
   obj.achados.byKey = obj.achados.byKey||{};
   (obj.riscos||[]).forEach(r=>{
     r.override = r.override||{classificacaoInerente:null,justificativaClassInerente:"",classificacaoResidual:null,justificativaClassResidual:"",testeRecomendado:null,justificativaTeste:"",prioridade:null,justificativaPrioridade:""};
-    r.causas = r.causas||[]; r.consequencias = r.consequencias||[];
-    // migra fonte do risco (antiga, por risco) para cada causa/consequência
-    const fonteAntiga = (r.fonteRisco && (r.fonteRisco.tipo||r.fonteRisco.categoria))? r.fonteRisco : null;
-    r.causas.concat(r.consequencias).forEach(item=>{
-      item.fonte = item.fonte || (fonteAntiga? {tipo:fonteAntiga.tipo||"",categoria:fonteAntiga.categoria||""} : {tipo:"",categoria:""});
-    });
-    delete r.fonteRisco;
+    if(!Array.isArray(r.fontes)){
+      // migra formatos antigos: fonteRisco por risco e listas separadas de causas/consequências
+      const causas=r.causas||[], cons=r.consequencias||[];
+      const antiga=(r.fonteRisco&&(r.fonteRisco.tipo||r.fonteRisco.categoria))? r.fonteRisco : null;
+      const n=Math.max(causas.length,cons.length,1);
+      r.fontes=[];
+      for(let i=0;i<n;i++){
+        const c=causas[i], q=cons[i];
+        const fc=(c&&c.fonte&&(c.fonte.tipo||c.fonte.categoria))? c.fonte
+               : (q&&q.fonte&&(q.fonte.tipo||q.fonte.categoria))? q.fonte
+               : (antiga||{});
+        r.fontes.push({id:uid(),tipo:fc.tipo||"",categoria:fc.categoria||"",causa:(c&&c.texto)||"",consequencia:(q&&q.texto)||""});
+      }
+    }
+    r.fontes.forEach(f=>{ f.id=f.id||uid(); f.tipo=f.tipo||""; f.categoria=f.categoria||""; f.causa=f.causa||""; f.consequencia=f.consequencia||""; });
+    delete r.fonteRisco; delete r.causas; delete r.consequencias;
   });
   return obj;
 }
@@ -413,7 +421,7 @@ function reseq(){
   let max = 1;
   const scan = s => { const m=/^i(\d+)_/.exec(s||""); if(m) max=Math.max(max,parseInt(m[1])); };
   state.entendimento.objetivos.forEach(o=>scan(o.id));
-  state.riscos.forEach(r=>{ scan(r.id); r.causas.forEach(c=>scan(c.id)); r.consequencias.forEach(c=>scan(c.id)); });
+  state.riscos.forEach(r=>{ scan(r.id); r.fontes.forEach(f=>scan(f.id)); });
   Object.values(state.planejamento.subquestoesPorRisco).forEach(arr=>arr.forEach(s=>scan(s.id)));
   _seq = max+1;
 }
@@ -640,49 +648,42 @@ function objetivoOptions(sel){
   const objs = state.entendimento.objetivos;
   return ['<option value="">—</option>'].concat(objs.map((o,i)=>`<option value="${o.id}"${o.id===sel?" selected":""}>Objetivo ${i+1}${o.texto?": "+esc(o.texto.slice(0,40)):""}</option>`)).join("");
 }
-function fonteSelects(ri,kind,ci,f,extra){
-  const cats = Object.keys(CATALOGO[f.tipo]||{});
-  return `<div class="fonte-sel">
-    <select onchange="setItemFonteTipo(${ri},'${kind}',${ci},this.value)" title="Fonte do Risco">
-      <option value="">Fonte…</option>
-      <option value="Fontes Internas"${f.tipo==='Fontes Internas'?' selected':''}>Fonte Interna</option>
-      <option value="Fontes Externas"${f.tipo==='Fontes Externas'?' selected':''}>Fonte Externa</option>
-    </select>
-    <select onchange="setItemFonteCategoria(${ri},'${kind}',${ci},this.value)" ${f.tipo?'':'disabled'} title="Categoria da fonte">
-      <option value="">Categoria…</option>
-      ${cats.map(c=>`<option value="${esc(c)}"${f.categoria===c?' selected':''}>${esc(c)}</option>`).join("")}
-    </select>
-    ${extra||""}
-  </div>`;
-}
 function viewIdentificacao(){
   let cards = state.riscos.map((r,ri)=>{
-    const causas = r.causas.map((c,ci)=>{
-      const itens = (CATALOGO[c.fonte.tipo]||{})[c.fonte.categoria]||[];
-      const dlid = `dl_${r.id}_cs_${ci}`;
-      const btnSugerir = c.fonte.categoria && itens.length? `<button class="sm" onclick="sugerirCausa(${ri},${ci})" title="Sugerir vulnerabilidade do catálogo para esta causa">↳ sugerir</button>` : "";
+    const fontes = r.fontes.map((f,fi)=>{
+      const cats = Object.keys(CATALOGO[f.tipo]||{});
+      const itens = (CATALOGO[f.tipo]||{})[f.categoria]||[];
+      const dlid = `dl_${r.id}_f_${fi}`;
       return `
-      <div class="subline fonte-item">
-        <span class="reftag">Cs ${ri+1}.${ci+1}</span>
-        <div class="fi-body">
-          ${fonteSelects(ri,'causas',ci,c.fonte,btnSugerir)}
-          <input type="text" value="${esc(c.texto)}" placeholder="Possível causa"${itens.length?` list="${dlid}"`:""}
-            oninput="state.riscos[${ri}].causas[${ci}].texto=this.value;touch()">
-          ${itens.length?`<datalist id="${dlid}">${itens.map(t=>`<option value="${esc(t)}">`).join("")}</datalist>`:""}
+      <div class="fonte-block">
+        <div class="fhead">
+          <span class="ref">Fonte ${ri+1}.${fi+1}</span> ${infoIcon('fonte')}
+          <select onchange="setFonteTipo(${ri},${fi},this.value)" title="Tipo da fonte">
+            <option value="">Fonte…</option>
+            <option value="Fontes Internas"${f.tipo==='Fontes Internas'?' selected':''}>Fonte Interna</option>
+            <option value="Fontes Externas"${f.tipo==='Fontes Externas'?' selected':''}>Fonte Externa</option>
+          </select>
+          <select onchange="setFonteCategoria(${ri},${fi},this.value)" ${f.tipo?'':'disabled'} title="Categoria da fonte">
+            <option value="">Categoria…</option>
+            ${cats.map(c=>`<option value="${esc(c)}"${f.categoria===c?' selected':''}>${esc(c)}</option>`).join("")}
+          </select>
+          ${f.categoria&&itens.length?`<button class="sm" onclick="sugerirCausa(${ri},${fi})" title="Sugerir vulnerabilidade do catálogo como causa">↳ sugerir causa</button>`:""}
+          <span class="sep"></span>
+          <button class="danger sm" onclick="removeFonte('${r.id}','${f.id}')" title="Remover esta fonte com sua causa e consequência">×</button>
         </div>
-        <button class="danger sm" onclick="removeCausa('${r.id}','${c.id}')">×</button>
+        <div class="grid2">
+          <div class="field"><label>Possível Causa (Cs ${ri+1}.${fi+1}) ${infoIcon('causas')}</label>
+            <input type="text" value="${esc(f.causa)}" placeholder="Possível causa"${itens.length?` list="${dlid}"`:""}
+              oninput="state.riscos[${ri}].fontes[${fi}].causa=this.value;touch()">
+            ${itens.length?`<datalist id="${dlid}">${itens.map(t=>`<option value="${esc(t)}">`).join("")}</datalist>`:""}
+          </div>
+          <div class="field"><label>Possível Consequência (Cq ${ri+1}.${fi+1}) ${infoIcon('consequencias')}</label>
+            <input type="text" value="${esc(f.consequencia)}" placeholder="Possível consequência"
+              oninput="state.riscos[${ri}].fontes[${fi}].consequencia=this.value;touch()">
+          </div>
+        </div>
       </div>`;
     }).join("");
-    const conseq = r.consequencias.map((c,ci)=>`
-      <div class="subline fonte-item">
-        <span class="reftag">Cq ${ri+1}.${ci+1}</span>
-        <div class="fi-body">
-          ${fonteSelects(ri,'consequencias',ci,c.fonte)}
-          <input type="text" value="${esc(c.texto)}" placeholder="Possível consequência"
-            oninput="state.riscos[${ri}].consequencias[${ci}].texto=this.value;touch()">
-        </div>
-        <button class="danger sm" onclick="removeConseq('${r.id}','${c.id}')">×</button>
-      </div>`).join("");
     return `
     <div class="card risk-card">
       <div class="dhead">
@@ -693,18 +694,9 @@ function viewIdentificacao(){
         <select onchange="state.riscos[${ri}].objetivoId=this.value||null;touch()">${objetivoOptions(r.objetivoId)}</select></div>
       <div class="field"><label>Risco (R${ri+1}) ${infoIcon('risco')}</label>
         <textarea oninput="state.riscos[${ri}].texto=this.value;touch();renderNav()" placeholder="Descreva o risco">${esc(r.texto)}</textarea></div>
-      <div class="grid2">
-        <div>
-          <label style="font-weight:600;font-size:12.5px">Possíveis Causas ${infoIcon('causas')} — Fonte do Risco por causa ${infoIcon('fonte')}</label>
-          ${causas}
-          <button class="addbtn sm" onclick="addCausa('${r.id}')">+ causa</button>
-        </div>
-        <div>
-          <label style="font-weight:600;font-size:12.5px">Possíveis Consequências ${infoIcon('consequencias')} — Fonte do Risco por consequência ${infoIcon('fonte')}</label>
-          ${conseq}
-          <button class="addbtn sm" onclick="addConseq('${r.id}')">+ consequência</button>
-        </div>
-      </div>
+      <label style="font-weight:600;font-size:12.5px;display:block;margin-bottom:6px">Fontes do Risco ${infoIcon('fonte')} — cada fonte agrupa uma causa e uma consequência</label>
+      ${fontes}
+      <button class="addbtn sm" onclick="addFonte('${r.id}')">+ fonte do risco</button>
     </div>`;
   }).join("");
   return `<div class="card"><h2>Identificação e Análise de Riscos</h2>
@@ -716,46 +708,42 @@ function viewIdentificacao(){
     ${cards}
     <button class="primary" onclick="addRisco()">+ adicionar risco</button>`;
 }
-function setItemFonteTipo(ri,kind,ci,v){
-  const it=state.riscos[ri][kind][ci];
-  it.fonte.tipo=v; it.fonte.categoria=""; touch(); render();
+function setFonteTipo(ri,fi,v){
+  const f=state.riscos[ri].fontes[fi];
+  f.tipo=v; f.categoria=""; touch(); render();
 }
-function setItemFonteCategoria(ri,kind,ci,v){
-  const it=state.riscos[ri][kind][ci];
-  it.fonte.categoria=v; touch();
+function setFonteCategoria(ri,fi,v){
+  const f=state.riscos[ri].fontes[fi];
+  f.categoria=v; touch();
   // auto-sugere vulnerabilidade do catálogo se a causa estiver vazia
-  if(kind==='causas' && v && !it.texto.trim()){ sugerirCausa(ri,ci); } else { render(); }
+  if(v && !f.causa.trim()){ sugerirCausa(ri,fi); } else { render(); }
 }
-function sugerirCausa(ri,ci){
-  const r=state.riscos[ri], c=r.causas[ci];
-  const itens=(CATALOGO[c.fonte.tipo]||{})[c.fonte.categoria]||[];
+function sugerirCausa(ri,fi){
+  const r=state.riscos[ri], f=r.fontes[fi];
+  const itens=(CATALOGO[f.tipo]||{})[f.categoria]||[];
   if(!itens.length){ render(); return; }
   // usa a primeira vulnerabilidade da categoria ainda não utilizada neste risco
-  const usados = r.causas.map(x=>x.texto.trim());
-  c.texto = itens.find(t=>!usados.includes(t)) || itens[0];
+  const usados = r.fontes.map(x=>x.causa.trim());
+  f.causa = itens.find(t=>!usados.includes(t)) || itens[0];
   touch(); render();
 }
 function addRisco(){ state.riscos.push(novoRisco()); touch(); render(); }
 function removeRisco(id){
   if(state.riscos.length<=1){ alert("Mantenha ao menos 1 risco."); return; }
   const r=state.riscos.find(x=>x.id===id);
-  const temConteudo = r && (r.texto.trim()||r.causas.some(c=>c.texto.trim())||r.probabilidade||r.conclusaoCoordenador);
+  const temConteudo = r && (r.texto.trim()||r.fontes.some(f=>f.causa.trim()||f.consequencia.trim())||r.probabilidade||r.conclusaoCoordenador);
   if(temConteudo && !confirm("Remover o risco e tudo encadeado (causas, consequências, planejamento e achados)?")) return;
   state.riscos=state.riscos.filter(x=>x.id!==id);
   delete state.planejamento.subquestoesPorRisco[id];
   Object.keys(state.achados.byKey).forEach(k=>{ if(k.startsWith(id+":")) delete state.achados.byKey[k]; });
   touch(); render();
 }
-function addCausa(rid){ const r=state.riscos.find(x=>x.id===rid); r.causas.push(novoItemComFonte()); touch(); render(); }
-function removeCausa(rid,cid){ const r=state.riscos.find(x=>x.id===rid);
-  if(r.causas.length<=1){ alert("Mantenha ao menos 1 causa."); return; }
-  const c=r.causas.find(x=>x.id===cid); if(c&&c.texto.trim()&&!confirm("Remover esta causa?")) return;
-  r.causas=r.causas.filter(x=>x.id!==cid); touch(); render(); }
-function addConseq(rid){ const r=state.riscos.find(x=>x.id===rid); r.consequencias.push(novoItemComFonte()); touch(); render(); }
-function removeConseq(rid,cid){ const r=state.riscos.find(x=>x.id===rid);
-  if(r.consequencias.length<=1){ alert("Mantenha ao menos 1 consequência."); return; }
-  const c=r.consequencias.find(x=>x.id===cid); if(c&&c.texto.trim()&&!confirm("Remover esta consequência?")) return;
-  r.consequencias=r.consequencias.filter(x=>x.id!==cid); touch(); render(); }
+function addFonte(rid){ const r=state.riscos.find(x=>x.id===rid); r.fontes.push(novaFonte()); touch(); render(); }
+function removeFonte(rid,fid){ const r=state.riscos.find(x=>x.id===rid);
+  if(r.fontes.length<=1){ alert("Mantenha ao menos 1 fonte do risco."); return; }
+  const f=r.fontes.find(x=>x.id===fid);
+  if(f&&(f.causa.trim()||f.consequencia.trim())&&!confirm("Remover esta fonte com sua causa e consequência?")) return;
+  r.fontes=r.fontes.filter(x=>x.id!==fid); touch(); render(); }
 
 /* ============================================================
    3. MATRIZ DE RISCOS E CONTROLES
@@ -934,8 +922,8 @@ function gerarLinhasAchados(){
       linhas.push({
         key:r.id+":"+s.id, riscoId:r.id, subId:s.id,
         riscoRef:"R"+(ri+1), riscoTexto:r.texto,
-        causas:r.causas.map((c,ci)=>"Cs "+(ri+1)+"."+(ci+1)+itemComFonteTexto(c)).filter(t=>t.includes(" - ")).join("; "),
-        conseqs:r.consequencias.map((c,ci)=>"Cq "+(ri+1)+"."+(ci+1)+itemComFonteTexto(c)).filter(t=>t.includes(" - ")).join("; "),
+        causas:r.fontes.map((f,fi)=>"Cs "+(ri+1)+"."+(fi+1)+causaComFonte(f)).filter(t=>t.includes(" - ")).join("; "),
+        conseqs:r.fontes.map((f,fi)=>"Cq "+(ri+1)+"."+(fi+1)+conseqComFonte(f)).filter(t=>t.includes(" - ")).join("; "),
         subRef:(ri+1)+"."+(si+1), subTexto:s.texto, criterio:s.criterio||""
       });
     });
@@ -989,16 +977,16 @@ function viewVulnerabilidades(){
     return `<div class="card"><div class="sectionbar">${esc(tipo)}</div>${cats}</div>`;
   }).join("");
   return `<div class="card"><h2>Catálogo de Vulnerabilidades</h2>
-    <div class="sub">Fonte da sugestão automática de causas. Selecione um risco e clique “+ causa” para inserir.</div>
+    <div class="sub">Fonte da sugestão automática de causas. Selecione um risco e clique “+ causa”: a vulnerabilidade é inserida como causa em uma Fonte do Risco com o tipo e a categoria correspondentes.</div>
     ${target}</div>${blocks}`;
 }
 function inserirComoCausa(tipo,cat,texto){
   const rid=document.getElementById("vulnTarget").value;
   const r=state.riscos.find(x=>x.id===rid); if(!r){ alert("Selecione um risco."); return; }
-  // se houver causa vazia, usa-a; senão adiciona
-  let alvo=r.causas.find(c=>!c.texto.trim());
-  if(!alvo){ alvo=novoItemComFonte(); r.causas.push(alvo); }
-  alvo.texto=texto; alvo.fonte={tipo:tipo,categoria:cat}; touch();
+  // usa fonte sem causa (vazia ou da mesma categoria); senão adiciona nova fonte
+  let alvo=r.fontes.find(f=>!f.causa.trim() && (!f.tipo || (f.tipo===tipo&&f.categoria===cat)));
+  if(!alvo){ alvo=novaFonte(); r.fontes.push(alvo); }
+  alvo.tipo=tipo; alvo.categoria=cat; alvo.causa=texto; touch();
   setSaveState("Causa inserida em R"+(state.riscos.indexOf(r)+1));
 }
 function viewTabelas(){
@@ -1034,9 +1022,10 @@ function fonteLabel(f){
   const t = f.tipo==="Fontes Internas"?"Interna":(f.tipo==="Fontes Externas"?"Externa":f.tipo);
   return [t,f.categoria].filter(Boolean).join(" / ");
 }
-function itemComFonteTexto(c){ const fl=fonteLabel(c.fonte); return c.texto? " - "+c.texto+(fl?" [Fonte: "+fl+"]":"") : ""; }
-function relTextoCausas(r,ri){ return r.causas.map((c,ci)=>"Cs "+(ri+1)+"."+(ci+1)+itemComFonteTexto(c)).join("\n"); }
-function relTextoConseq(r,ri){ return r.consequencias.map((c,ci)=>"Cq "+(ri+1)+"."+(ci+1)+itemComFonteTexto(c)).join("\n"); }
+function causaComFonte(f){ const fl=fonteLabel(f); return f.causa? " - "+f.causa+(fl?" [Fonte: "+fl+"]":"") : ""; }
+function conseqComFonte(f){ const fl=fonteLabel(f); return f.consequencia? " - "+f.consequencia+(fl?" [Fonte: "+fl+"]":"") : ""; }
+function relTextoCausas(r,ri){ return r.fontes.map((f,fi)=>"Cs "+(ri+1)+"."+(fi+1)+causaComFonte(f)).join("\n"); }
+function relTextoConseq(r,ri){ return r.fontes.map((f,fi)=>"Cq "+(ri+1)+"."+(fi+1)+conseqComFonte(f)).join("\n"); }
 
 function buildReportHTML(){
   const e=state.entendimento;
